@@ -31,7 +31,12 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://buloqkhatm.vercel.app";
+      // App URL: env to'g'ri (https) bo'lsa o'shani, aks holda so'rov kelgan domenni ishlatamiz
+      const envUrl = process.env.NEXT_PUBLIC_APP_URL;
+      const appUrl =
+        envUrl && envUrl.startsWith("https://")
+          ? envUrl.replace(/\/$/, "")
+          : req.nextUrl.origin;
       const webAppUrl = `${appUrl}/telegram`;
 
       await sendTelegramMessage(chatId, `
