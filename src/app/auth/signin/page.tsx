@@ -29,7 +29,12 @@ const IS_DEV = process.env.NODE_ENV === "development";
 export default function SignInPage() {
   const router      = useRouter();
   const widgetRef   = useRef<HTMLDivElement>(null);
-  const botUsername = process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "BuloqKhatmBot";
+  // Telegram widget username'ni '@' yoki 't.me/' prefikssiz talab qiladi — tozalaymiz
+  const botUsername = (process.env.NEXT_PUBLIC_TELEGRAM_BOT_USERNAME ?? "BuloqKhatmBot")
+    .trim()
+    .replace(/^@/, "")
+    .replace(/^https?:\/\/t\.me\//i, "")
+    .replace(/^t\.me\//i, "");
 
   // Dev mode form
   const [devId,    setDevId]    = useState("");
