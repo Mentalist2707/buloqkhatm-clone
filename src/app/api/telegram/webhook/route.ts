@@ -14,22 +14,26 @@ export async function POST(req: NextRequest) {
       const chatId = update.message.chat.id;
       const from = update.message.from;
 
-      // Register or update user
-      await prisma.user.upsert({
-        where: { telegramId: String(chatId) },
-        create: {
-          telegramId: String(chatId),
-          firstName: from.first_name,
-          lastName: from.last_name,
-          username: from.username,
-        },
-        update: {
-          firstName: from.first_name,
-          lastName: from.last_name,
-          username: from.username,
-          lastActiveAt: new Date(),
-        },
-      });
+      // Register or update user (baza xatosi bo'lsa ham xabar yuborilaverishi uchun try/catch)
+      try {
+        await prisma.user.upsert({
+          where: { telegramId: String(chatId) },
+          create: {
+            telegramId: String(chatId),
+            firstName: from.first_name,
+            lastName: from.last_name,
+            username: from.username,
+          },
+          update: {
+            firstName: from.first_name,
+            lastName: from.last_name,
+            username: from.username,
+            lastActiveAt: new Date(),
+          },
+        });
+      } catch (e) {
+        console.error("[/start upsert]", e);
+      }
 
       // App URL: env to'g'ri (https) bo'lsa o'shani, aks holda so'rov kelgan domenni ishlatamiz
       const envUrl = process.env.NEXT_PUBLIC_APP_URL;
