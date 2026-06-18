@@ -17,7 +17,7 @@ export const LEVELS = [
 ] as const;
 
 export function getUserLevel(coins: number) {
-  let level = LEVELS[0];
+  let level: (typeof LEVELS)[number] = LEVELS[0];
   for (const l of LEVELS) {
     if (coins >= l.minPoints) level = l;
   }
