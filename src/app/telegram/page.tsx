@@ -9,6 +9,30 @@ import { Button } from "@/components/ui/button";
 
 type Status = "loading" | "authenticating" | "success" | "error" | "no-telegram";
 
+// Telegram WebApp SDK skriptini yuklaydi (Mini App ichida window.Telegram.WebApp paydo bo'lishi uchun)
+function ensureTelegramSdk(): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined") return resolve();
+    if (window.Telegram?.WebApp) return resolve();
+
+    const SRC = "https://telegram.org/js/telegram-web-app.js";
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${SRC}"]`);
+    if (existing) {
+      if (window.Telegram?.WebApp) return resolve();
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => resolve(), { once: true });
+      return;
+    }
+
+    const s = document.createElement("script");
+    s.src = SRC;
+    s.async = true;
+    s.addEventListener("load", () => resolve(), { once: true });
+    s.addEventListener("error", () => resolve(), { once: true });
+    document.head.appendChild(s);
+  });
+}
+
 declare global {
   interface Window {
     Telegram?: {
@@ -51,6 +75,9 @@ export default function TelegramMiniAppPage() {
       }
 
       if (status === "loading") return;
+
+      // Telegram WebApp SDK skriptini yuklaymiz (Mini App ichida ishlashi uchun zarur)
+      await ensureTelegramSdk();
 
       // Telegram WebApp mavjudligini tekshirish
       const tg = window.Telegram?.WebApp;
