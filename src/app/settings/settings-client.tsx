@@ -13,6 +13,8 @@ import {
   Bell,
   Smartphone,
   CheckCircle2,
+  Trash2,
+  AlertTriangle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +23,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { toast } from "@/hooks/use-toast";
 import { signOut } from "next-auth/react";
 import { formatDate } from "@/lib/utils";
@@ -55,6 +58,8 @@ export function SettingsClient({ user }: Props) {
   const [loading, setLoading] = useState(false);
   const [country, setCountry] = useState(user.country ?? "");
   const [saved, setSaved] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const avatar = user.photoUrl ?? user.image ?? "";
   const initials = `${user.firstName?.[0] ?? user.name?.[0] ?? "?"}`.toUpperCase();
@@ -80,6 +85,21 @@ export function SettingsClient({ user }: Props) {
       toast({ title: "Xato", description: err.message, variant: "destructive" });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch("/api/users/me", { method: "DELETE" });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Xatolik");
+      toast({ title: "Hisob o'chirildi" });
+      // Sessiyani tugatib bosh sahifaga chiqaramiz
+      await signOut({ callbackUrl: "/" });
+    } catch (err: any) {
+      toast({ title: "Xato", description: err.message, variant: "destructive" });
+      setDeleting(false);
+      setDeleteOpen(false);
     }
   };
 
@@ -341,6 +361,53 @@ export function SettingsClient({ user }: Props) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Danger zone — hisobni o'chirish */}
+      <Card className="border-red-200">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2 text-red-600">
+            <AlertTriangle className="h-4 w-4" />
+            Xavfli zona
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <p className="font-medium text-sm">Hisobni o'chirish</p>
+              <p className="text-xs text-muted-foreground mt-0.5 max-w-md">
+                Hisobingiz, ballaringiz, medallaringiz va siz yaratgan xatmlar butunlay o'chiriladi.
+                Bu amalni ortga qaytarib bo'lmaydi.
+              </p>
+            </div>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => setDeleteOpen(true)}
+              className="shrink-0"
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              Hisobni o'chirish
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      <ConfirmModal
+        open={deleteOpen}
+        onClose={() => !deleting && setDeleteOpen(false)}
+        onConfirm={handleDeleteAccount}
+        loading={deleting}
+        variant="destructive"
+        title="Hisobni o'chirishni tasdiqlaysizmi?"
+        description="Bu amal qaytarib bo'lmaydi. Profilingiz, ballaringiz, medallaringiz va siz yaratgan barcha xatmlar butunlay o'chiriladi."
+        confirmLabel="Ha, o'chirish"
+        cancelLabel="Bekor qilish"
+        icon={
+          <div className="h-11 w-11 rounded-full bg-red-100 flex items-center justify-center">
+            <Trash2 className="h-5 w-5 text-red-600" />
+          </div>
+        }
+      />
     </div>
   );
 }

@@ -114,3 +114,31 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Server xatosi" }, { status: 500 });
   }
 }
+
+// DELETE /api/users/me — foydalanuvchi o'z hisobini o'chiradi
+export async function DELETE() {
+  try {
+    const session = await auth();
+    if (!session) {
+      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
+    }
+
+    const userId = session.user.id;
+
+    await prisma.$transaction(async (tx) => {
+      // Foydalanuvchi yaratgan xatmlar (Khatm.createdBy cascade emas) —
+      // ularni o'chiramiz, bu juz/participations/joinRequests ni cascade qiladi
+      await tx.khatm.deleteMany({ where: { createdById: userId } });
+
+      // Foydalanuvchining o'zi — qolgan barcha bog'liq yozuvlar onDelete: Cascade orqali ketadi
+      // (accounts, sessions, participations, juzProgress, dailyActivities,
+      //  joinRequests, notifications, coinHistory, badges). Juz.assignedTo esa null bo'ladi.
+      await tx.user.delete({ where: { id: userId } });
+    });
+
+    return NextResponse.json({ deleted: true });
+  } catch (err) {
+    console.error("[DELETE /api/users/me]", err);
+    return NextResponse.json({ error: "Server xatosi" }, { status: 500 });
+  }
+}

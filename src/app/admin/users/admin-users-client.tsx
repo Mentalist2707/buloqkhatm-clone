@@ -95,7 +95,7 @@ export function AdminUsersClient({ users: initialUsers, isSuperAdmin }: Props) {
       {/* Table */}
       <Card>
         <CardContent className="p-0">
-          <div className="overflow-x-auto">
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b bg-gray-50 text-muted-foreground">
@@ -234,13 +234,94 @@ export function AdminUsersClient({ users: initialUsers, isSuperAdmin }: Props) {
                 })}
               </tbody>
             </table>
-
-            {filtered.length === 0 && (
-              <div className="text-center py-10 text-muted-foreground text-sm">
-                Foydalanuvchi topilmadi
-              </div>
-            )}
           </div>
+
+          {/* Mobile: karta ko'rinishi — amallar har doim ko'rinadi (yo'qolmaydi) */}
+          <div className="md:hidden divide-y">
+            {filtered.map((user) => {
+              const initials = `${user.firstName?.[0] ?? ""}${user.lastName?.[0] ?? ""}`.toUpperCase() || "?";
+              const isLoading = loading?.startsWith(user.id);
+              return (
+                <div key={user.id} className="p-4 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-10 w-10 shrink-0">
+                      <AvatarImage src={user.photoUrl ?? ""} />
+                      <AvatarFallback className="text-xs bg-blue-100 text-blue-700">
+                        {initials}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">
+                        {user.firstName} {user.lastName}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {user.username ? `@${user.username}` : user.email ?? user.telegramId ?? "—"}
+                      </p>
+                    </div>
+                    <Badge className={`text-xs shrink-0 ${ROLE_COLORS[user.role as Role]}`}>
+                      {user.role}
+                    </Badge>
+                  </div>
+
+                  <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                    <span className="font-bold text-emerald-600">{user.coins} ball</span>
+                    <span>{user._count.participations} xatm</span>
+                    {user.isBanned
+                      ? <Badge variant="destructive" className="text-[10px]">Ban</Badge>
+                      : <Badge variant="success" className="text-[10px]">Faol</Badge>}
+                  </div>
+
+                  {/* Amallar — inline tugmalar */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {user.isBanned ? (
+                      <Button size="sm" variant="outline"
+                        className="h-8 text-xs text-emerald-600 border-emerald-200"
+                        disabled={isLoading}
+                        onClick={() => handleAction(user.id, "unban")}>
+                        <CheckCircle className="h-3.5 w-3.5 mr-1" /> Unban
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="outline"
+                        className="h-8 text-xs text-red-600 border-red-200"
+                        disabled={isLoading}
+                        onClick={() => handleAction(user.id, "ban")}>
+                        <Ban className="h-3.5 w-3.5 mr-1" /> Ban
+                      </Button>
+                    )}
+                    <Button size="sm" variant="outline"
+                      className="h-8 text-xs text-blue-600 border-blue-200"
+                      disabled={isLoading}
+                      onClick={() => handleAction(user.id, "add_coins", { points: 10, coins: 10 })}>
+                      <Star className="h-3.5 w-3.5 mr-1" /> +10 ball
+                    </Button>
+                    {isLoading && (
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    )}
+                  </div>
+
+                  {isSuperAdmin && (
+                    <div className="flex flex-wrap gap-2 pt-2 border-t">
+                      <span className="text-[10px] text-muted-foreground w-full">Rol o'zgartirish:</span>
+                      {(["USER", "MODERATOR", "ADMIN"] as Role[]).map((role) => (
+                        <Button key={role} size="sm" variant="ghost"
+                          className="h-7 text-[11px] text-gray-600 bg-gray-50"
+                          disabled={isLoading || user.role === role}
+                          onClick={() => handleAction(user.id, "set_role", { role })}>
+                          <ShieldCheck className="h-3 w-3 mr-1" /> {role}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {filtered.length === 0 && (
+            <div className="text-center py-10 text-muted-foreground text-sm">
+              Foydalanuvchi topilmadi
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
