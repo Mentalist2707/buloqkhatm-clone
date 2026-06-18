@@ -44,7 +44,7 @@ interface Props {
     country: string | null;
     telegramId: string | null;
     role: string;
-    points: number;
+    coins: number;
     level: string;
     createdAt: string;
   };
