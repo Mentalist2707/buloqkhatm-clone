@@ -40,26 +40,27 @@ export async function POST(req: NextRequest) {
       const webAppUrl = `${appUrl}/telegram`;
 
       await sendTelegramMessage(chatId, `
-🌿 <b>BuloqKhatm'ga xush kelibsiz!</b>
+🕌 <b>BuloqKhatm</b> — Global Qur'on Xatmi Platformasi
 
 بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيمِ
 
-📖 Global Qur'on Xatmi Platformasi
+Assalomu alaykum! BuloqKhatm — bu <b>jamoaviy Qur'on xatmi</b> platformasi. Qur'onning 30 porasi ishtirokchilar o'rtasida taqsimlanadi va birgalikda xatm qilinadi.
 
-Bu yerda siz:
-✅ Jamoaviy xatmda qatnashishingiz
-✅ O'z xatmingizni yaratishingiz  
-✅ Pora olish va tasdiqlashingiz
-✅ Reyting va badge olishingiz mumkin
+✨ <b>Imkoniyatlar:</b>
+📖 Pora olish, o'qib tasdiqlash
+👥 Jamoaviy yoki shaxsiy (taklif kodi bilan) xatm yaratish
+🪙 Har o'qilgan pora uchun Ajr Ball
+🔥 Kunlik streak va medallar
+🏆 Reyting jadvalida o'z o'rningiz
 
-Barcha poralarni o'qigandan so'ng xatm yakunlanadi va barcha ishtirokchilarga xabar yuboriladi.
+Xatm yakunlangach barcha ishtirokchilarga xabar beriladi.
 
-Savob bo'lsin! 🤲`, {
+Boshlash uchun quyidagi tugmani bosing 👇`, {
         parseMode: "HTML",
         replyMarkup: {
           inline_keyboard: [[
             {
-              text: "🌿 Platformani ochish",
+              text: "📖 Web App'ni ochish",
               web_app: { url: webAppUrl },
             },
           ]],
