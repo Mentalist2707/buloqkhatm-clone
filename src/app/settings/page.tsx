@@ -26,6 +26,7 @@ export default async function SettingsPage() {
       role: true,
       coins: true,
       level: true,
+      isIncognito: true,
       createdAt: true,
     },
   });

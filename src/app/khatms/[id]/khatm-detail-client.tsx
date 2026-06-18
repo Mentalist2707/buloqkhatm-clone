@@ -269,30 +269,36 @@ export function KhatmDetailClient({
     }
   };
 
-  // Ulashish — toza, ochiladigan havola (taklif kodi URL ichida query param sifatida)
+  // Ulashish — Telegram orqali forward (link + taklif kodi)
   const handleShare = async () => {
     const base = `${window.location.origin}/khatms/${khatm.id}`;
     const shareUrl = khatm.inviteCode ? `${base}?code=${khatm.inviteCode}` : base;
-    try {
-      // Mobil/Telegram: native ulashish oynasi (mavjud bo'lsa)
-      if (typeof navigator !== "undefined" && navigator.share) {
-        await navigator.share({ title: khatm.title, url: shareUrl });
-        return;
-      }
-      await navigator.clipboard.writeText(shareUrl);
-      toast({
-        title: "📋 Havola nusxalandi!",
-        description: khatm.inviteCode ? `Taklif kodi: ${khatm.inviteCode}` : shareUrl,
-      });
-    } catch {
-      // navigator.share bekor qilinsa yoki clipboard ishlamasa
+    const text = khatm.inviteCode
+      ? `"${khatm.title}" xatmiga qo'shiling! 📖\nTaklif kodi: ${khatm.inviteCode}`
+      : `"${khatm.title}" xatmiga qo'shiling! 📖`;
+    const tgShare =
+      `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(text)}`;
+
+    // Telegram Mini App ichida bo'lsa — Telegram'ning forward oynasini ochamiz
+    const tg = (window as { Telegram?: { WebApp?: { openTelegramLink?: (u: string) => void } } }).Telegram?.WebApp;
+    if (tg?.openTelegramLink) {
+      tg.openTelegramLink(tgShare);
+      return;
+    }
+
+    // Brauzerda — Telegram share sahifasini yangi oynada ochamiz
+    const win = window.open(tgShare, "_blank");
+    if (!win) {
+      // Pop-up bloklansa — havolani clipboard'ga nusxalaymiz
       try {
         await navigator.clipboard.writeText(shareUrl);
         toast({ title: "📋 Havola nusxalandi!", description: shareUrl });
       } catch {
-        toast({ title: "Havolani nusxalab bo'lmadi", description: shareUrl, variant: "destructive" });
+        toast({ title: "Havola", description: shareUrl });
       }
+      return;
     }
+    toast({ title: "📤 Telegram orqali ulashish", description: "Do'stlaringizga yuboring" });
   };
 
   // ─────────────────────────────────────────────────────────────────────────────

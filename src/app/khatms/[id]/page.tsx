@@ -3,6 +3,7 @@ import { redirect, notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { MainLayout } from "@/components/layout/main-layout";
 import { KhatmDetailClient } from "./khatm-detail-client";
+import { maskIncognitoUser, isAdminRole } from "@/lib/utils";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -22,8 +23,11 @@ async function getKhatmDetail(id: string, userId: string) {
           id: true,
           firstName: true,
           lastName: true,
+          name: true,
           photoUrl: true,
+          image: true,
           username: true,
+          isIncognito: true,
         },
       },
       juzList: {
@@ -33,8 +37,11 @@ async function getKhatmDetail(id: string, userId: string) {
               id: true,
               firstName: true,
               lastName: true,
+              name: true,
               photoUrl: true,
+              image: true,
               username: true,
+              isIncognito: true,
             },
           },
           progress: {
@@ -53,8 +60,11 @@ async function getKhatmDetail(id: string, userId: string) {
               id: true,
               firstName: true,
               lastName: true,
+              name: true,
               photoUrl: true,
+              image: true,
               coins: true,
+              isIncognito: true,
             },
           },
         },
@@ -88,8 +98,8 @@ async function getKhatmDetail(id: string, userId: string) {
         include: {
           user: {
             select: {
-              id: true, firstName: true, lastName: true,
-              username: true, photoUrl: true,
+              id: true, firstName: true, lastName: true, name: true,
+              username: true, photoUrl: true, image: true, isIncognito: true,
             },
           },
         },
@@ -119,17 +129,42 @@ export default async function KhatmDetailPage({
   const data = await getKhatmDetail(id, session.user.id);
   if (!data) notFound();
 
+  const isAdmin = isAdminRole(session.user.role);
+
+  // Private xatm faqat a'zo / yaratuvchi / admin ga ko'rinadi
+  if (data.khatm.isPrivate && !data.isParticipant && !data.isCreator && !isAdmin) {
+    notFound();
+  }
+
+  // Inkognito foydalanuvchilarni anonimlashtirish (bir xil user — bir xil raqam, o'zini ko'radi)
+  const incoMap = new Map<string, number>();
+  let incoCounter = 0;
+  const maskU = (u: any): any => {
+    if (!u || !u.isIncognito || isAdmin || u.id === session.user.id) return u;
+    let idx = incoMap.get(u.id);
+    if (!idx) { incoCounter += 1; idx = incoCounter; incoMap.set(u.id, idx); }
+    return maskIncognitoUser(u, false, idx);
+  };
+
+  const maskedKhatm = {
+    ...data.khatm,
+    createdBy: maskU(data.khatm.createdBy),
+    juzList: data.khatm.juzList.map((j: any) => ({ ...j, assignedTo: maskU(j.assignedTo) })),
+    participations: data.khatm.participations.map((p: any) => ({ ...p, user: maskU(p.user) })),
+  };
+  const maskedJoinRequests = data.joinRequests.map((r: any) => ({ ...r, user: maskU(r.user) }));
+
   return (
     <MainLayout>
       <KhatmDetailClient
-        khatm={JSON.parse(JSON.stringify(data.khatm))}
+        khatm={JSON.parse(JSON.stringify(maskedKhatm))}
         isParticipant={data.isParticipant}
         isCreator={data.isCreator}
         myJuz={JSON.parse(JSON.stringify(data.myJuz))}
         userActiveJuzCount={data.userActiveJuzCount}
         userId={session.user.id}
         userRole={session.user.role}
-        joinRequests={JSON.parse(JSON.stringify(data.joinRequests))}
+        joinRequests={JSON.parse(JSON.stringify(maskedJoinRequests))}
       />
     </MainLayout>
   );

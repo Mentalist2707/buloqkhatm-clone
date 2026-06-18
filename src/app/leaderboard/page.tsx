@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { MainLayout } from "@/components/layout/main-layout";
 import { LeaderboardClient } from "./leaderboard-client";
+import { maskIncognitoList, isAdminRole } from "@/lib/utils";
 
 export const metadata = { title: "Reyting" };
 
@@ -41,6 +42,8 @@ async function getLeaderboardData(userId: string) {
     level: true,
     country: true,
     streakDays: true,
+    role: true,
+    isIncognito: true,
     _count: {
       select: {
         participations: true,
@@ -49,15 +52,19 @@ async function getLeaderboardData(userId: string) {
   } as const;
 
   const [allTime, currentUserRank] = await Promise.all([
-    // All-time TOP 100
+    // All-time TOP 100 (SUPER_ADMIN ko'rsatilmaydi)
     prisma.user.findMany({
+      where: { role: { not: "SUPER_ADMIN" } },
       orderBy: { coins: "desc" },
       take: 100,
       select: userSelect,
     }),
-    // Current user rank (all-time)
+    // Current user rank (all-time) — SUPER_ADMIN hisobga olinmaydi
     prisma.user.count({
-      where: { coins: { gt: (await prisma.user.findUnique({ where: { id: userId }, select: { coins: true } }))?.coins ?? 0 } },
+      where: {
+        role: { not: "SUPER_ADMIN" },
+        coins: { gt: (await prisma.user.findUnique({ where: { id: userId }, select: { coins: true } }))?.coins ?? 0 },
+      },
     }),
   ]);
 
@@ -84,11 +91,11 @@ async function getLeaderboardData(userId: string) {
 
   const [weeklyUsers, monthlyUsers] = await Promise.all([
     prisma.user.findMany({
-      where: { id: { in: weeklyUserIds } },
+      where: { id: { in: weeklyUserIds }, role: { not: "SUPER_ADMIN" } },
       select: userSelect,
     }),
     prisma.user.findMany({
-      where: { id: { in: monthlyUserIds } },
+      where: { id: { in: monthlyUserIds }, role: { not: "SUPER_ADMIN" } },
       select: userSelect,
     }),
   ]);
@@ -148,13 +155,14 @@ export default async function LeaderboardPage() {
   if (!session) redirect("/auth/signin");
 
   const data = await getLeaderboardData(session.user.id);
+  const isAdminViewer = isAdminRole(session.user.role);
 
   return (
     <MainLayout>
       <LeaderboardClient
-        allTime={JSON.parse(JSON.stringify(data.allTime))}
-        weekly={JSON.parse(JSON.stringify(data.weekly))}
-        monthly={JSON.parse(JSON.stringify(data.monthly))}
+        allTime={JSON.parse(JSON.stringify(maskIncognitoList(data.allTime, isAdminViewer)))}
+        weekly={JSON.parse(JSON.stringify(maskIncognitoList(data.weekly, isAdminViewer)))}
+        monthly={JSON.parse(JSON.stringify(maskIncognitoList(data.monthly, isAdminViewer)))}
         currentUserId={session.user.id}
         currentUserRank={data.currentUserRank}
         juzMap={data.juzMap}

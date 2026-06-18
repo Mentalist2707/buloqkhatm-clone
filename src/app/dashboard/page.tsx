@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { MainLayout } from "@/components/layout/main-layout";
 import { DashboardClient } from "./dashboard-client";
-import { todayUTC } from "@/lib/utils";
+import { todayUTC, maskIncognitoList, maskIncognitoUser, isAdminRole } from "@/lib/utils";
 
 export const metadata = { title: "Dashboard" };
 
@@ -56,9 +56,16 @@ async function getDashboardData(userId: string) {
       take: 4,
     }),
 
-    // Active khatms
+    // Active khatms (private faqat a'zo/creator ga ko'rinadi)
     prisma.khatm.findMany({
-      where: { status: "ACTIVE" },
+      where: {
+        status: "ACTIVE",
+        OR: [
+          { type: "GLOBAL" },
+          { createdById: userId },
+          { participations: { some: { userId } } },
+        ],
+      },
       include: {
         _count:    { select: { participations: true } },
         juzList:   { where: { status: "COMPLETED" }, select: { id: true } },
@@ -68,13 +75,15 @@ async function getDashboardData(userId: string) {
       take: 4,
     }),
 
-    // Top 5 users (by coins)
+    // Top 5 users (by coins) — SUPER_ADMIN ko'rsatilmaydi
     prisma.user.findMany({
+      where: { role: { not: "SUPER_ADMIN" } },
       orderBy: { coins: "desc" },
       take: 5,
       select: {
-        id: true, firstName: true, lastName: true,
-        photoUrl: true, coins: true, level: true, streakDays: true,
+        id: true, firstName: true, lastName: true, name: true,
+        photoUrl: true, image: true, coins: true, level: true,
+        streakDays: true, isIncognito: true,
       },
     }),
 
@@ -83,11 +92,12 @@ async function getDashboardData(userId: string) {
       where: { userId_date: { userId, date: today } },
     }),
 
-    // Live feed — so'nggi 6 ta coin transaction (barcha userlar)
+    // Live feed — so'nggi 6 ta coin transaction (SUPER_ADMIN ko'rsatilmaydi)
     prisma.coinTransaction.findMany({
+      where:    { user: { role: { not: "SUPER_ADMIN" } } },
       orderBy:  { createdAt: "desc" },
       take:     6,
-      include:  { user: { select: { firstName: true, lastName: true, photoUrl: true } } },
+      include:  { user: { select: { firstName: true, lastName: true, name: true, photoUrl: true, image: true, isIncognito: true } } },
     }),
 
     // My badges
@@ -121,6 +131,17 @@ export default async function DashboardPage() {
   if (!session) redirect("/auth/signin");
 
   const data = await getDashboardData(session.user.id);
+  const isAdminViewer = isAdminRole(session.user.role);
+
+  // Inkognito feed foydalanuvchilarini anonimlashtirish (admin bo'lmagan ko'ruvchi uchun)
+  let feedN = 0;
+  const maskedFeed = data.recentFeed.map((tx: any) => {
+    if (tx.user?.isIncognito && !isAdminViewer) {
+      feedN += 1;
+      return { ...tx, user: maskIncognitoUser(tx.user, false, feedN) };
+    }
+    return tx;
+  });
 
   return (
     <MainLayout>
@@ -130,9 +151,9 @@ export default async function DashboardPage() {
         global={data.global}
         myActiveJuz={JSON.parse(JSON.stringify(data.myActiveJuz))}
         recentKhatms={JSON.parse(JSON.stringify(data.recentKhatms))}
-        topUsers={JSON.parse(JSON.stringify(data.topUsers))}
+        topUsers={JSON.parse(JSON.stringify(maskIncognitoList(data.topUsers, isAdminViewer)))}
         todayActivity={JSON.parse(JSON.stringify(data.todayActivity))}
-        recentFeed={JSON.parse(JSON.stringify(data.recentFeed))}
+        recentFeed={JSON.parse(JSON.stringify(maskedFeed))}
         myBadges={JSON.parse(JSON.stringify(data.myBadges))}
       />
     </MainLayout>

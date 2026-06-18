@@ -13,7 +13,11 @@ export default async function AdminUsersPage() {
   const allowed = ["ADMIN", "SUPER_ADMIN"];
   if (!allowed.includes(session.user.role)) redirect("/dashboard");
 
+  const isSuperAdmin = session.user.role === "SUPER_ADMIN";
+
   const users = await prisma.user.findMany({
+    // SUPER_ADMIN faqat boshqa SUPER_ADMIN'ga ko'rinadi
+    where: isSuperAdmin ? {} : { role: { not: "SUPER_ADMIN" } },
     orderBy: { createdAt: "desc" },
     include: {
       _count: { select: { participations: true, juzAssigned: true } },
@@ -24,7 +28,7 @@ export default async function AdminUsersPage() {
     <MainLayout>
       <AdminUsersClient
         users={JSON.parse(JSON.stringify(users))}
-        isSuperAdmin={session.user.role === "SUPER_ADMIN"}
+        isSuperAdmin={isSuperAdmin}
       />
     </MainLayout>
   );

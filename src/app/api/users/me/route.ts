@@ -102,11 +102,14 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
     }
 
-    const { country } = await req.json();
+    const { country, isIncognito } = await req.json();
 
     const updated = await prisma.user.update({
       where: { id: session.user.id },
-      data:  { ...(country !== undefined && { country }) },
+      data:  {
+        ...(country !== undefined && { country }),
+        ...(typeof isIncognito === "boolean" && { isIncognito }),
+      },
     });
 
     return NextResponse.json(updated);

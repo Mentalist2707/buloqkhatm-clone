@@ -15,12 +15,14 @@ import {
   CheckCircle2,
   Trash2,
   AlertTriangle,
+  EyeOff,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { ConfirmModal } from "@/components/ui/confirm-modal";
@@ -49,6 +51,7 @@ interface Props {
     role: string;
     coins: number;
     level: string;
+    isIncognito: boolean;
     createdAt: string;
   };
 }
@@ -60,6 +63,8 @@ export function SettingsClient({ user }: Props) {
   const [saved, setSaved] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [incognito, setIncognito] = useState(user.isIncognito ?? false);
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
 
   const avatar = user.photoUrl ?? user.image ?? "";
   const initials = `${user.firstName?.[0] ?? user.name?.[0] ?? "?"}`.toUpperCase();
@@ -100,6 +105,31 @@ export function SettingsClient({ user }: Props) {
       toast({ title: "Xato", description: err.message, variant: "destructive" });
       setDeleting(false);
       setDeleteOpen(false);
+    }
+  };
+
+  const handleIncognitoToggle = async (value: boolean) => {
+    setIncognito(value);
+    setSavingPrivacy(true);
+    try {
+      const res = await fetch("/api/users/me", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isIncognito: value }),
+      });
+      if (!res.ok) throw new Error((await res.json()).error ?? "Xatolik");
+      toast({
+        title: value ? "🕶️ Inkognito yoqildi" : "Inkognito o'chirildi",
+        description: value
+          ? "Endi ismingiz boshqalarga 'Inkognito' bo'lib ko'rinadi"
+          : undefined,
+      });
+      router.refresh();
+    } catch (err: any) {
+      setIncognito(!value); // qaytarish
+      toast({ title: "Xato", description: err.message, variant: "destructive" });
+    } finally {
+      setSavingPrivacy(false);
     }
   };
 
@@ -358,6 +388,34 @@ export function SettingsClient({ user }: Props) {
               <LogOut className="h-4 w-4 mr-1" />
               Chiqish
             </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Maxfiylik — inkognito rejimi */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <EyeOff className="h-4 w-4 text-emerald-600" />
+            Maxfiylik
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="font-medium text-sm">Inkognito rejimi</p>
+              <p className="text-xs text-muted-foreground mt-0.5 max-w-md leading-relaxed">
+                Yoqilsa, boshqa foydalanuvchilar reyting va ro'yxatlarda sizning
+                ismingiz, rasmingiz va username'ingizni ko'rmaydi — siz "Inkognito"
+                bo'lib ko'rinasiz. Faqat administratorlar haqiqiy ma'lumotingizni ko'radi.
+              </p>
+            </div>
+            <Switch
+              checked={incognito}
+              disabled={savingPrivacy}
+              onCheckedChange={handleIncognitoToggle}
+              className="shrink-0 data-[state=checked]:bg-emerald-500"
+            />
           </div>
         </CardContent>
       </Card>

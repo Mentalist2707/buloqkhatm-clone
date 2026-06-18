@@ -104,6 +104,7 @@ model User {
   totalKhatms    Int @default(0) @map("total_khatms")
 
   country      String?
+  isIncognito  Boolean  @default(false) @map("is_incognito")
   isActive     Boolean  @default(true)  @map("is_active")
   isBanned     Boolean  @default(false) @map("is_banned")
   bannedAt     DateTime? @map("banned_at")

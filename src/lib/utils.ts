@@ -116,6 +116,58 @@ export const JUZ_NAMES: Record<number, string> = {
   30: "Amma Yatasa'alun (Juz Amma)",
 };
 
+// ─── Maxfiylik / Inkognito ────────────────────────────────────────────────────
+
+/** Faqat ADMIN va SUPER_ADMIN inkognito foydalanuvchilarning real ma'lumotini ko'radi */
+export function isAdminRole(role?: string | null): boolean {
+  return role === "ADMIN" || role === "SUPER_ADMIN";
+}
+
+interface MaskableUser {
+  id?: string;
+  firstName?: string | null;
+  lastName?:  string | null;
+  name?:      string | null;
+  username?:  string | null;
+  photoUrl?:  string | null;
+  image?:     string | null;
+  isIncognito?: boolean | null;
+}
+
+/** Inkognito foydalanuvchini (admin bo'lmagan ko'ruvchi uchun) "Inkognito N" ga aylantiradi */
+export function maskIncognitoUser<T extends MaskableUser>(
+  user: T,
+  isAdminViewer: boolean,
+  index: number
+): T {
+  if (!user || !user.isIncognito || isAdminViewer) return user;
+  const label = `Inkognito ${index}`;
+  return {
+    ...user,
+    firstName: label,
+    lastName:  null,
+    name:      label,
+    username:  null,
+    photoUrl:  null,
+    image:     null,
+  } as T;
+}
+
+/** Ro'yxatdagi inkognito foydalanuvchilarni ketma-ket raqamlab anonimlashtiradi */
+export function maskIncognitoList<T extends MaskableUser>(
+  list: T[],
+  isAdminViewer: boolean
+): T[] {
+  let n = 0;
+  return list.map((u) => {
+    if (u && u.isIncognito && !isAdminViewer) {
+      n += 1;
+      return maskIncognitoUser(u, false, n);
+    }
+    return u;
+  });
+}
+
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
 export function formatDate(date: Date | string): string {
