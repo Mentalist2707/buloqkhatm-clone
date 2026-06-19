@@ -359,7 +359,7 @@ export function CreateKhatmForm() {
                 min={today()}
                 value={form.startDate}
                 onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                className="bg-white w-full"
+                className="bg-white w-full min-w-0"
               />
             </div>
             <div className="space-y-1.5">
@@ -370,7 +370,7 @@ export function CreateKhatmForm() {
                 min={form.startDate || today()}
                 value={form.endDate}
                 onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                className="bg-white w-full"
+                className="bg-white w-full min-w-0"
               />
             </div>
           </div>
