@@ -15,7 +15,6 @@ import {
   RotateCcw,
   CheckSquare,
   Hash,
-  ChevronDown,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -351,7 +350,7 @@ export function CreateKhatmForm() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label htmlFor="startDate">Boshlanish sanasi</Label>
               <Input
@@ -360,7 +359,7 @@ export function CreateKhatmForm() {
                 min={today()}
                 value={form.startDate}
                 onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-                className="bg-white"
+                className="bg-white w-full"
               />
             </div>
             <div className="space-y-1.5">
@@ -371,7 +370,7 @@ export function CreateKhatmForm() {
                 min={form.startDate || today()}
                 value={form.endDate}
                 onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-                className="bg-white"
+                className="bg-white w-full"
               />
             </div>
           </div>
