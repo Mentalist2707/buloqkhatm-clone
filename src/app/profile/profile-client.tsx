@@ -164,11 +164,6 @@ export function ProfileClient({ user, completedJuz, completedKhatms }: Props) {
                     🔥 {user.streakDays} kun streak
                   </span>
                 )}
-                {user?.role !== "USER" && (
-                  <span className="text-xs font-semibold px-2.5 py-1 rounded-full glass-card text-purple-200">
-                    {user.role}
-                  </span>
-                )}
               </div>
             </div>
           </div>

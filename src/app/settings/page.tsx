@@ -1,17 +1,16 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { MainLayout } from "@/components/layout/main-layout";
 import { SettingsClient } from "./settings-client";
 
 export const metadata = { title: "Sozlamalar" };
+export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
-  const session = await auth();
-  if (!session) redirect("/auth/signin");
+  const current = await getCurrentUser();
 
   const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
+    where: { id: current.id },
     select: {
       id: true,
       name: true,
@@ -22,16 +21,13 @@ export default async function SettingsPage() {
       photoUrl: true,
       image: true,
       country: true,
-      telegramId: true,
-      role: true,
       coins: true,
       level: true,
-      isIncognito: true,
       createdAt: true,
     },
   });
 
-  if (!user) redirect("/auth/signin");
+  if (!user) return null;
 
   return (
     <MainLayout>

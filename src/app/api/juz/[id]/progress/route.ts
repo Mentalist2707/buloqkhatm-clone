@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getCurrentUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { COIN_RULES, JUZ_TOTAL_PAGES, todayUTC } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
 import {
   addCoins,
   checkAndAwardDailyActivity,
@@ -31,10 +33,7 @@ export async function POST(
 ) {
   try {
     const rp = await context.params;
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
-    }
+    const userId = await getCurrentUserId();
 
     const body   = await req.json();
     const parsed = schema.safeParse(body);
@@ -46,7 +45,6 @@ export async function POST(
     }
 
     const { pagesRead } = parsed.data;
-    const userId = session.user.id;
 
     // Juz va tegishli khatm
     const juz = await prisma.juz.findUnique({
@@ -200,10 +198,6 @@ export async function GET(
 ) {
   try {
     const rp = await context.params;
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
-    }
 
     const progress = await prisma.juzProgress.findUnique({
       where: { juzId: rp.id },

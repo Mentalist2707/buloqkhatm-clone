@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
 
 export interface UserStats {
   coins: number;
@@ -18,7 +17,6 @@ let inflight: Promise<UserStats | null> | null = null;
 const TTL = 60_000; // 1 daqiqa — shu oraliqda qayta so'rov yuborilmaydi
 
 async function fetchStats(): Promise<UserStats | null> {
-  // Allaqachon ketayotgan so'rov bo'lsa — uni qayta ishlatamiz (deduplikatsiya)
   if (inflight) return inflight;
 
   inflight = fetch("/api/users/me")
@@ -40,22 +38,13 @@ async function fetchStats(): Promise<UserStats | null> {
 
 /**
  * Foydalanuvchi coins/streak ma'lumotini keshlangan holda qaytaradi.
- * Sahifa o'tishlarda qayta fetch qilmaydi (TTL ichida kesh ishlatiladi).
  */
 export function useUserStats(): UserStats {
-  const { data: session } = useSession();
   const [stats, setStats] = useState<UserStats>(
-    () =>
-      statsCache ?? {
-        coins: session?.user?.coins ?? 0,
-        streakDays: (session?.user as { streakDays?: number } | undefined)?.streakDays ?? 0,
-      }
+    () => statsCache ?? { coins: 0, streakDays: 0 }
   );
 
   useEffect(() => {
-    if (!session?.user?.id) return;
-
-    // Kesh hali yangi bo'lsa — tarmoqqa chiqmaymiz
     if (statsCache && Date.now() - cachedAt < TTL) {
       setStats(statsCache);
       return;
@@ -68,12 +57,12 @@ export function useUserStats(): UserStats {
     return () => {
       active = false;
     };
-  }, [session?.user?.id]);
+  }, []);
 
   return stats;
 }
 
-/** Coin/streak o'zgargach keshni majburan yangilash uchun (masalan pora yakunlangach). */
+/** Coin/streak o'zgargach keshni majburan yangilash uchun. */
 export function invalidateUserStats() {
   statsCache = null;
   cachedAt = 0;

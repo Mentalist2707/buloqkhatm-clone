@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getCurrentUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 
 // POST /api/juz/[id]/release — porani bo'shatish (voz kechish)
 export async function POST(
@@ -9,10 +11,7 @@ export async function POST(
 ) {
   try {
     const rp = await context.params;
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
-    }
+    const userId = await getCurrentUserId();
 
     const juz = await prisma.juz.findUnique({
       where: { id: rp.id },
@@ -23,9 +22,7 @@ export async function POST(
       return NextResponse.json({ error: "Pora topilmadi" }, { status: 404 });
     }
 
-    // Faqat egasi yoki admin bo'shatishi mumkin
-    const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role);
-    if (juz.assignedToId !== session.user.id && !isAdmin) {
+    if (juz.assignedToId !== userId) {
       return NextResponse.json({ error: "Bu sizning porangiz emas" }, { status: 403 });
     }
 

@@ -1,18 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getCurrentUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { todayUTC, COIN_RULES, daysBetween } from "@/lib/utils";
 import { addCoins } from "@/lib/coins";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/users/me — profile + daily coin check
 export async function GET() {
   try {
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
-    }
-
-    const userId = session.user.id;
+    const userId = await getCurrentUserId();
     const today  = todayUTC();
 
     // ── Kunlik +5 coin tekshirish ──────────────────────────────
@@ -97,18 +94,23 @@ export async function GET() {
 // PATCH /api/users/me — profile yangilash
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
-    }
+    const userId = await getCurrentUserId();
 
-    const { country, isIncognito } = await req.json();
+    const { name, country } = await req.json();
+
+    const trimmedName = typeof name === "string" ? name.trim() : undefined;
 
     const updated = await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: userId },
       data:  {
+        ...(trimmedName !== undefined && {
+          name:      trimmedName || null,
+          firstName: trimmedName ? trimmedName.split(" ")[0] : null,
+          lastName:  trimmedName && trimmedName.split(" ").length > 1
+            ? trimmedName.split(" ").slice(1).join(" ")
+            : null,
+        }),
         ...(country !== undefined && { country }),
-        ...(typeof isIncognito === "boolean" && { isIncognito }),
       },
     });
 
@@ -118,15 +120,10 @@ export async function PATCH(req: NextRequest) {
   }
 }
 
-// DELETE /api/users/me — foydalanuvchi o'z hisobini o'chiradi
+// DELETE /api/users/me — barcha shaxsiy ma'lumotlarni tozalash (hisob qayta yaratiladi)
 export async function DELETE() {
   try {
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
-    }
-
-    const userId = session.user.id;
+    const userId = await getCurrentUserId();
 
     await prisma.$transaction(async (tx) => {
       // Foydalanuvchi yaratgan xatmlar (Khatm.createdBy cascade emas) —

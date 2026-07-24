@@ -216,6 +216,39 @@ export async function awardKhatmCompleted(
   }
 }
 
+// ─── Kitob to'liq o'qilganda (+50 BuloqCoin) ─────────────────────────────────
+
+export async function awardBookCompleted(
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  userId: string,
+  bookTitle: string,
+  bookId: string
+) {
+  await addCoins(
+    tx,
+    userId,
+    COIN_RULES.BOOK_COMPLETED,
+    "BOOK_COMPLETED",
+    `"${bookTitle}" kitobi to'liq o'qildi`,
+    { bookId, bookTitle }
+  );
+
+  await tx.user.update({
+    where: { id: userId },
+    data:  { totalBooksRead: { increment: 1 } },
+  });
+
+  await tx.notification.create({
+    data: {
+      userId,
+      type:    "BOOK_COMPLETED",
+      title:   "📚 Kitob yakunlandi!",
+      message: `Tabriklaymiz! "${bookTitle}" kitobini o'qib tugatdingiz. +${COIN_RULES.BOOK_COMPLETED} BuloqCoin`,
+      metadata: { bookId },
+    },
+  });
+}
+
 // ─── Badge tekshirish ─────────────────────────────────────────────────────────
 
 export async function checkAndAwardBadges(
@@ -224,7 +257,7 @@ export async function checkAndAwardBadges(
 ) {
   const user = await tx.user.findUnique({
     where: { id: userId },
-    select: { totalKhatms: true, streakDays: true,
+    select: { totalKhatms: true, streakDays: true, totalBooksRead: true,
               badges: { select: { badge: { select: { type: true } } } } },
   });
   if (!user) return;
@@ -238,6 +271,8 @@ export async function checkAndAwardBadges(
     { type: "KHATM_100", condition: user.totalKhatms >= 100 && !earned.has("KHATM_100" as any) },
     { type: "STREAK_7",  condition: user.streakDays  >= 7   && !earned.has("STREAK_7"  as any) },
     { type: "STREAK_30", condition: user.streakDays  >= 30  && !earned.has("STREAK_30" as any) },
+    { type: "BOOK_1",    condition: user.totalBooksRead >= 1  && !earned.has("BOOK_1"  as any) },
+    { type: "BOOK_10",   condition: user.totalBooksRead >= 10 && !earned.has("BOOK_10" as any) },
   ];
 
   for (const check of checks) {

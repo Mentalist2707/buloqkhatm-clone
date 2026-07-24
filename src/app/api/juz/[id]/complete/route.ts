@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getCurrentUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { JUZ_TOTAL_PAGES } from "@/lib/utils";
+
+export const dynamic = "force-dynamic";
 import {
   checkAndAwardDailyActivity,
   awardJuzCompleted,
@@ -25,12 +27,7 @@ export async function POST(
 ) {
   try {
     const rp = await context.params;
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
-    }
-
-    const userId = session.user.id;
+    const userId = await getCurrentUserId();
 
     const juz = await prisma.juz.findUnique({
       where: { id: rp.id },

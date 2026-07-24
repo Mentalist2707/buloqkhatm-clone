@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 
 // GET /api/khatms/[id]
 export async function GET(
@@ -42,28 +43,17 @@ export async function GET(
   }
 }
 
-// PATCH /api/khatms/[id] — update status (admin/creator)
+// PATCH /api/khatms/[id] — update status
 export async function PATCH(
   req: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
     const rp = await context.params;
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
-    }
 
     const khatm = await prisma.khatm.findUnique({ where: { id: rp.id } });
     if (!khatm) {
       return NextResponse.json({ error: "Xatm topilmadi" }, { status: 404 });
-    }
-
-    const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role);
-    const isCreator = khatm.createdById === session.user.id;
-
-    if (!isAdmin && !isCreator) {
-      return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
     }
 
     const body = await req.json();
@@ -92,16 +82,6 @@ export async function DELETE(
 ) {
   try {
     const rp = await context.params;
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
-    }
-
-    const isAdmin = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role);
-    if (!isAdmin) {
-      return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
-    }
-
     await prisma.khatm.delete({ where: { id: rp.id } });
     return NextResponse.json({ success: true });
   } catch {

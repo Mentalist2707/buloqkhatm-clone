@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getCurrentUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 
 // GET /api/khatms/by-code/[code] — invite code bo'yicha xatm topish
 export async function GET(
@@ -9,10 +11,7 @@ export async function GET(
 ) {
   try {
     const rp = await context.params;
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
-    }
+    const userId = await getCurrentUserId();
 
     const khatm = await prisma.khatm.findUnique({
       where: { inviteCode: rp.code.toUpperCase() },
@@ -40,11 +39,11 @@ export async function GET(
 
     // Qo'shilish holati
     const isParticipant = await prisma.participation.findUnique({
-      where: { userId_khatmId: { userId: session.user.id, khatmId: khatm.id } },
+      where: { userId_khatmId: { userId, khatmId: khatm.id } },
     });
 
     const pendingRequest = await prisma.joinRequest.findUnique({
-      where: { userId_khatmId: { userId: session.user.id, khatmId: khatm.id } },
+      where: { userId_khatmId: { userId, khatmId: khatm.id } },
     });
 
     const completedJuz = khatm.juzList.filter((j) => j.status === "COMPLETED").length;

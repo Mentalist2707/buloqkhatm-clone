@@ -1,5 +1,3 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, BookOpen } from "lucide-react";
 import { MainLayout } from "@/components/layout/main-layout";
@@ -7,10 +5,7 @@ import { CreateKhatmForm } from "./create-khatm-form";
 
 export const metadata = { title: "Yangi Xatm Yaratish" };
 
-export default async function CreateKhatmPage() {
-  const session = await auth();
-  if (!session) redirect("/auth/signin");
-
+export default function CreateKhatmPage() {
   return (
     <MainLayout>
       <div className="max-w-2xl mx-auto w-full">

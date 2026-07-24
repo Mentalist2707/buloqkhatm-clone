@@ -71,14 +71,23 @@ const TYPE_CONFIG: Record<
     label:       "Eslatma",
     deepLink:    (meta) => meta?.khatmId ? `/khatms/${meta.khatmId}` : null,
   },
-  MODERATOR_MESSAGE: {
-    icon:        MessageSquare,
+  BOOK_COMPLETED: {
+    icon:        BookOpen,
     iconColor:   "text-blue-600",
     iconBg:      "bg-blue-100",
     leftBorder:  "border-l-blue-500",
     bgUnread:    "bg-blue-50/60",
-    label:       "Moderator",
-    deepLink:    () => null,
+    label:       "Kitob",
+    deepLink:    (meta) => meta?.bookId ? `/books/${meta.bookId}` : null,
+  },
+  BOOK_DEADLINE: {
+    icon:        MessageSquare,
+    iconColor:   "text-cyan-600",
+    iconBg:      "bg-cyan-100",
+    leftBorder:  "border-l-cyan-500",
+    bgUnread:    "bg-cyan-50/60",
+    label:       "Kitob eslatma",
+    deepLink:    (meta) => meta?.bookId ? `/books/${meta.bookId}` : null,
   },
   NEW_KHATM: {
     icon:        BookOpen,
@@ -268,8 +277,8 @@ export function NotificationsClient({
   const filtered = useMemo(() => {
     switch (tab) {
       case "UNREAD": return notifications.filter((n) => !n.isRead);
-      case "SYSTEM": return notifications.filter((n) => n.type === "SYSTEM" || n.type === "MODERATOR_MESSAGE");
-      case "KHATM":  return notifications.filter((n) => ["KHATM_COMPLETED", "JUZ_DEADLINE", "NEW_KHATM"].includes(n.type));
+      case "SYSTEM": return notifications.filter((n) => n.type === "SYSTEM");
+      case "KHATM":  return notifications.filter((n) => ["KHATM_COMPLETED", "JUZ_DEADLINE", "NEW_KHATM", "BOOK_COMPLETED", "BOOK_DEADLINE"].includes(n.type));
       default:       return notifications;
     }
   }, [notifications, tab]);
@@ -337,8 +346,8 @@ export function NotificationsClient({
   const tabs: { key: TabFilter; label: string; count?: number }[] = [
     { key: "ALL",    label: "Barchasi",   count: notifications.length },
     { key: "UNREAD", label: "O'qilmagan", count: notifications.filter((n) => !n.isRead).length },
-    { key: "KHATM",  label: "Xatm",       count: notifications.filter((n) => ["KHATM_COMPLETED","JUZ_DEADLINE","NEW_KHATM"].includes(n.type)).length },
-    { key: "SYSTEM", label: "Tizim",      count: notifications.filter((n) => ["SYSTEM","MODERATOR_MESSAGE"].includes(n.type)).length },
+    { key: "KHATM",  label: "O'qish",     count: notifications.filter((n) => ["KHATM_COMPLETED","JUZ_DEADLINE","NEW_KHATM","BOOK_COMPLETED","BOOK_DEADLINE"].includes(n.type)).length },
+    { key: "SYSTEM", label: "Tizim",      count: notifications.filter((n) => ["SYSTEM"].includes(n.type)).length },
   ];
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -492,7 +501,7 @@ export function NotificationsClient({
           {[
             { color: "bg-emerald-500", label: "Xatm" },
             { color: "bg-amber-500",   label: "Eslatma" },
-            { color: "bg-blue-500",    label: "Moderator" },
+            { color: "bg-blue-500",    label: "Kitob" },
             { color: "bg-purple-500",  label: "Yangi Xatm" },
             { color: "bg-gray-400",    label: "Tizim" },
           ].map((l) => (

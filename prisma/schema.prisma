@@ -1,23 +1,17 @@
-// BuloqKhatm - Global Qur'on Xatmi Platformasi
-// Prisma Schema v3 — Telegram-First Auth
+// BuloqKhatm — Shaxsiy Qur'on Xatmi va Kitob O'qish Rejasi
+// Prisma Schema v4 — Single-user (auth yo'q, rol yo'q)
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 // ─── Enums ───────────────────────────────────────────────────────────────────
-
-enum Role {
-  USER
-  MODERATOR
-  ADMIN
-  SUPER_ADMIN
-}
 
 enum KhatmStatus {
   DRAFT
@@ -40,7 +34,8 @@ enum JuzStatus {
 enum NotificationType {
   JUZ_DEADLINE
   KHATM_COMPLETED
-  MODERATOR_MESSAGE
+  BOOK_DEADLINE
+  BOOK_COMPLETED
   NEW_KHATM
   SYSTEM
 }
@@ -52,7 +47,8 @@ enum BadgeType {
   KHATM_100
   STREAK_7
   STREAK_30
-  REFERRAL
+  BOOK_1
+  BOOK_10
 }
 
 /// BuloqCoin tranzaksiya sabablari
@@ -62,34 +58,32 @@ enum CoinReason {
   JUZ_COMPLETED     // +25  — pora to'liq o'qildi
   KHATM_PARTICIPANT // +25  — xatm yakunlandi (ishtirokchi)
   KHATM_CREATOR     // +100 — xatm yaratuvchi bonus
+  BOOK_COMPLETED    // +50  — kitob to'liq o'qildi
   STREAK_7          // +20  — 7 kun streak
   STREAK_30         // +50  — 30 kun streak
-  REFERRAL          // +15  — do'st taklif
-  ADMIN_BONUS       // admin qo'shdi
-  ADMIN_DEDUCT      // admin ayirdi
+  ADMIN_BONUS       // qo'lda qo'shildi
+  ADMIN_DEDUCT      // qo'lda ayirildi
 }
 
-// ─── User ─────────────────────────────────────────────────────────────────────
+enum BookStatus {
+  READING     // o'qilmoqda
+  COMPLETED   // yakunlangan
+  PAUSED      // to'xtatilgan
+}
+
+// ─── User (bitta shaxsiy foydalanuvchi) ────────────────────────────────────────
 
 model User {
   id         String  @id @default(cuid())
 
-  /// Telegram asosiy identifikator — UNIQUE, majburiy
-  telegramId String  @unique @map("telegram_id")
-
-  /// Telegram profil ma'lumotlari
   username   String?
   firstName  String? @map("first_name")
   lastName   String? @map("last_name")
   photoUrl   String? @map("photo_url")
 
-  // NextAuth adapter uchun kerakli fieldlar
-  name          String?   // firstName + lastName birlashmasi
+  name          String?
   email         String?   @unique
-  emailVerified DateTime? @map("email_verified")
-  image         String?   // photoUrl nusxasi
-
-  role         Role    @default(USER)
+  image         String?
 
   // BuloqCoin
   coins        Int     @default(0)
@@ -102,21 +96,12 @@ model User {
   totalPagesRead Int @default(0) @map("total_pages_read")
   totalJuzRead   Int @default(0) @map("total_juz_read")
   totalKhatms    Int @default(0) @map("total_khatms")
+  totalBooksRead Int @default(0) @map("total_books_read")
 
   country      String?
-  isIncognito  Boolean  @default(false) @map("is_incognito")
-  isActive     Boolean  @default(true)  @map("is_active")
-  isBanned     Boolean  @default(false) @map("is_banned")
-  bannedAt     DateTime? @map("banned_at")
-  bannedReason String?   @map("banned_reason")
-  referredBy   String?   @map("referred_by")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt      @map("updated_at")
-
-  // NextAuth relations
-  accounts      Account[]
-  sessions      Session[]
 
   // App relations
   khatmsCreated   Khatm[]           @relation("KhatmCreator")
@@ -128,52 +113,10 @@ model User {
   coinHistory     CoinTransaction[]
   dailyActivities DailyActivity[]
   joinRequests    JoinRequest[]
-  referrals       User[]            @relation("Referrals")
-  referrer        User?             @relation("Referrals", fields: [referredBy], references: [id])
+  books           Book[]
+  bookLogs        BookReadingLog[]
 
   @@map("users")
-}
-
-// ─── NextAuth Models ──────────────────────────────────────────────────────────
-
-model Account {
-  id                String  @id @default(cuid())
-  userId            String  @map("user_id")
-  type              String
-  provider          String
-  providerAccountId String  @map("provider_account_id")
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String? @db.Text
-  session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([provider, providerAccountId])
-  @@map("accounts")
-}
-
-model Session {
-  id           String   @id @default(cuid())
-  sessionToken String   @unique @map("session_token")
-  userId       String   @map("user_id")
-  expires      DateTime
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
-}
-
-model VerificationToken {
-  identifier String
-  token      String   @unique
-  expires    DateTime
-
-  @@unique([identifier, token])
-  @@map("verification_tokens")
 }
 
 // ─── Khatm ────────────────────────────────────────────────────────────────────
@@ -252,6 +195,7 @@ model DailyActivity {
   date        DateTime @db.Date
   pagesRead   Int      @default(0) @map("pages_read")
   juzRead     Int      @default(0) @map("juz_read")
+  bookPages   Int      @default(0) @map("book_pages")
   coinsEarned Int      @default(0) @map("coins_earned")
   createdAt   DateTime @default(now()) @map("created_at")
 
@@ -277,12 +221,12 @@ model Participation {
   @@map("participations")
 }
 
-// ─── JoinRequest — private xatmga qo'shilish so'rovi ─────────────────────────
+// ─── JoinRequest ──────────────────────────────────────────────────────────────
 
 enum JoinRequestStatus {
-  PENDING   // kutilmoqda
-  APPROVED  // tasdiqlandi
-  REJECTED  // rad etildi
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model JoinRequest {
@@ -290,7 +234,7 @@ model JoinRequest {
   userId    String            @map("user_id")
   khatmId   String            @map("khatm_id")
   status    JoinRequestStatus @default(PENDING)
-  message   String?           // foydalanuvchi xabari (ixtiyoriy)
+  message   String?
   createdAt DateTime          @default(now()) @map("created_at")
   updatedAt DateTime          @updatedAt      @map("updated_at")
 
@@ -362,4 +306,57 @@ model UserBadge {
 
   @@unique([userId, badgeId])
   @@map("user_badges")
+}
+
+// ─── Book Reading Planner (Kitob o'qish rejasi) ────────────────────────────────
+
+model Book {
+  id          String     @id @default(cuid())
+  userId      String     @map("user_id")
+
+  title       String                              // kitob nomi
+  author      String?                             // muallif / egasi
+  coverUrl    String?    @map("cover_url")         // muqova rasmi (URL yoki /uploads/..)
+  description String?    @db.Text
+
+  totalPages  Int        @map("total_pages")       // jami betlar soni
+  currentPage Int        @default(0) @map("current_page") // hozirgi bet
+
+  startDate   DateTime   @default(now()) @map("start_date")
+  targetDays  Int        @map("target_days")       // necha kunda tugatish rejasi
+  targetDate  DateTime?  @map("target_date")       // reja tugash sanasi (startDate + targetDays)
+  completedAt DateTime?  @map("completed_at")
+
+  status      BookStatus @default(READING)
+
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt      @map("updated_at")
+
+  user User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  logs BookReadingLog[]
+
+  @@index([userId, status])
+  @@map("books")
+}
+
+/// Kitob o'qish tarixi — har bir o'qish yozuvi
+model BookReadingLog {
+  id        String   @id @default(cuid())
+  bookId    String   @map("book_id")
+  userId    String   @map("user_id")
+
+  date      DateTime @default(now())               // o'qilgan sana/vaqt
+  fromPage  Int      @map("from_page")             // qaysi betdan
+  toPage    Int      @map("to_page")               // qaysi betgacha
+  pagesRead Int      @map("pages_read")            // o'qilgan betlar (toPage - fromPage + 1)
+  note      String?  @db.Text                       // ixtiyoriy izoh
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  book Book @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([bookId, date])
+  @@index([userId, date])
+  @@map("book_reading_logs")
 }

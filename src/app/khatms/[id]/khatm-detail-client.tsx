@@ -38,7 +38,6 @@ import {
   JUZ_TOTAL_PAGES,
   cn,
 } from "@/lib/utils";
-import type { Role } from "@prisma/client";
 
 // ─── Juz status config ────────────────────────────────────────────────────────
 
@@ -95,7 +94,6 @@ interface Props {
   myJuz: JuzItem[];
   userActiveJuzCount: number;
   userId: string;
-  userRole: Role;
   joinRequests?: any[]; // creator uchun pending so'rovlar
 }
 
@@ -108,7 +106,6 @@ export function KhatmDetailClient({
   myJuz,
   userActiveJuzCount,
   userId,
-  userRole,
   joinRequests: initialRequests = [],
 }: Props) {
   const router = useRouter();
@@ -130,8 +127,7 @@ export function KhatmDetailClient({
   const availableCount = juzList.filter((j) => j.status === "AVAILABLE").length;
   const progress       = getKhatmProgress(completedCount);
 
-  const canTakeJuz  = userActiveJuzCount < 2 && khatm.status === "ACTIVE" && isParticipant;
-  const isAdmin     = ["ADMIN", "SUPER_ADMIN", "MODERATOR"].includes(userRole);
+  const canTakeJuz  = khatm.status === "ACTIVE" && isParticipant;
 
   const myActiveJuz = useMemo(
     () => juzList.filter((j) => j.assignedToId === userId && j.status === "RESERVED"),

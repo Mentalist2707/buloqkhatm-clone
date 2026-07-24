@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getCurrentUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateInviteCode } from "@/lib/utils";
 import { z } from "zod";
+
+export const dynamic = "force-dynamic";
 
 const createKhatmSchema = z.object({
   title:             z.string().min(1, "Nom talab qilinadi").max(100),
@@ -21,8 +23,7 @@ const createKhatmSchema = z.object({
 
 export async function GET(req: NextRequest) {
   try {
-    const session = await auth();
-    const userId  = session?.user?.id ?? null;
+    const userId = await getCurrentUserId();
 
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status") ?? "ACTIVE";
@@ -81,10 +82,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
-    }
+    const userId = await getCurrentUserId();
 
     const body   = await req.json();
     const parsed = createKhatmSchema.safeParse(body);
@@ -120,7 +118,7 @@ export async function POST(req: NextRequest) {
           inviteCode:        code,
           startDate:         startDate ? new Date(startDate) : null,
           endDate:           endDate   ? new Date(endDate)   : null,
-          createdById:       session.user.id,
+          createdById:       userId,
           maxJuzPerUser:     maxJuzPerUser === 0 ? 999 : maxJuzPerUser,
           requireSequential,
         },
@@ -137,7 +135,7 @@ export async function POST(req: NextRequest) {
 
       // Creator avtomatik a'zo bo'ladi
       await tx.participation.create({
-        data: { userId: session.user.id, khatmId: newKhatm.id },
+        data: { userId, khatmId: newKhatm.id },
       });
 
       return newKhatm;

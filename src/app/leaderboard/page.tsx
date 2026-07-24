@@ -1,172 +1,69 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { MainLayout } from "@/components/layout/main-layout";
-import { LeaderboardClient } from "./leaderboard-client";
-import { maskIncognitoList, isAdminRole } from "@/lib/utils";
+import { StatsClient } from "./leaderboard-client";
 
-export const metadata = { title: "Reyting" };
+export const metadata = { title: "Statistika" };
+export const dynamic = "force-dynamic";
 
-// ─── Date helpers ─────────────────────────────────────────────────────────────
-
-function startOfWeek() {
+function daysAgoUTC(n: number) {
   const d = new Date();
-  const day = d.getDay(); // 0=Sunday
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Monday
-  const monday = new Date(d.setDate(diff));
-  monday.setHours(0, 0, 0, 0);
-  return monday;
+  d.setUTCHours(0, 0, 0, 0);
+  d.setUTCDate(d.getUTCDate() - n);
+  return d;
 }
 
-function startOfMonth() {
-  const d = new Date();
-  return new Date(d.getFullYear(), d.getMonth(), 1, 0, 0, 0, 0);
+async function getStats(userId: string) {
+  const since = daysAgoUTC(13); // oxirgi 14 kun
+
+  const [user, dailyActivities, recentCoins, recentBookLogs, completedKhatms, completedBooks] =
+    await Promise.all([
+      prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          id: true, name: true, firstName: true, lastName: true,
+          coins: true, level: true, streakDays: true,
+          totalPagesRead: true, totalJuzRead: true,
+          totalKhatms: true, totalBooksRead: true, createdAt: true,
+        },
+      }),
+      prisma.dailyActivity.findMany({
+        where:   { userId, date: { gte: since } },
+        orderBy: { date: "asc" },
+      }),
+      prisma.coinTransaction.findMany({
+        where:   { userId },
+        orderBy: { createdAt: "desc" },
+        take:    15,
+      }),
+      prisma.bookReadingLog.findMany({
+        where:   { userId },
+        orderBy: { date: "desc" },
+        take:    10,
+        include: { book: { select: { id: true, title: true } } },
+      }),
+      prisma.khatm.count({
+        where: { status: "COMPLETED", participations: { some: { userId } } },
+      }),
+      prisma.book.count({ where: { userId, status: "COMPLETED" } }),
+    ]);
+
+  return { user, dailyActivities, recentCoins, recentBookLogs, completedKhatms, completedBooks };
 }
 
-// ─── Data fetcher ─────────────────────────────────────────────────────────────
-
-async function getLeaderboardData(userId: string) {
-  const weekStart  = startOfWeek();
-  const monthStart = startOfMonth();
-
-  // Shared user select fields
-  const userSelect = {
-    id: true,
-    firstName: true,
-    lastName: true,
-    name: true,
-    username: true,
-    photoUrl: true,
-    image: true,
-    coins: true,
-    level: true,
-    country: true,
-    streakDays: true,
-    role: true,
-    isIncognito: true,
-    _count: {
-      select: {
-        participations: true,
-      },
-    },
-  } as const;
-
-  const [allTime, currentUserRank] = await Promise.all([
-    // All-time TOP 100 (SUPER_ADMIN ko'rsatilmaydi)
-    prisma.user.findMany({
-      where: { role: { not: "SUPER_ADMIN" } },
-      orderBy: { coins: "desc" },
-      take: 100,
-      select: userSelect,
-    }),
-    // Current user rank (all-time) — SUPER_ADMIN hisobga olinmaydi
-    prisma.user.count({
-      where: {
-        role: { not: "SUPER_ADMIN" },
-        coins: { gt: (await prisma.user.findUnique({ where: { id: userId }, select: { coins: true } }))?.coins ?? 0 },
-      },
-    }),
-  ]);
-
-  // Weekly leaders — coinTransaction dan
-  const weeklyPoints = await prisma.coinTransaction.groupBy({
-    by: ["userId"],
-    where: { createdAt: { gte: weekStart } },
-    _sum: { amount: true },
-    orderBy: { _sum: { amount: "desc" } },
-    take: 10,
-  });
-
-  const monthlyPoints = await prisma.coinTransaction.groupBy({
-    by: ["userId"],
-    where: { createdAt: { gte: monthStart } },
-    _sum: { amount: true },
-    orderBy: { _sum: { amount: "desc" } },
-    take: 10,
-  });
-
-  // Fetch user details for weekly/monthly
-  const weeklyUserIds  = weeklyPoints.map((p) => p.userId);
-  const monthlyUserIds = monthlyPoints.map((p) => p.userId);
-
-  const [weeklyUsers, monthlyUsers] = await Promise.all([
-    prisma.user.findMany({
-      where: { id: { in: weeklyUserIds }, role: { not: "SUPER_ADMIN" } },
-      select: userSelect,
-    }),
-    prisma.user.findMany({
-      where: { id: { in: monthlyUserIds }, role: { not: "SUPER_ADMIN" } },
-      select: userSelect,
-    }),
-  ]);
-
-  // Merge points earned this period with user data
-  const mergePoints = (users: typeof weeklyUsers, pointsData: typeof weeklyPoints) =>
-    pointsData
-      .map((p) => {
-        const user = users.find((u) => u.id === p.userId);
-        if (!user) return null;
-        return { ...user, periodPoints: p._sum.amount ?? 0 };
-      })
-      .filter(Boolean) as (typeof weeklyUsers[number] & { periodPoints: number })[];
-
-  // Completed juz counts per user (all-time) for metrics
-  const juzCounts = await prisma.juz.groupBy({
-    by: ["assignedToId"],
-    where: { status: "COMPLETED", assignedToId: { not: null } },
-    _count: { id: true },
-  });
-
-  const completedKhatmCounts = await prisma.khatm.findMany({
-    where: {
-      status: "COMPLETED",
-      participations: { some: {} },
-    },
-    select: {
-      participations: { select: { userId: true } },
-    },
-  });
-
-  // Build metrics maps
-  const juzMap: Record<string, number> = {};
-  juzCounts.forEach((j) => { if (j.assignedToId) juzMap[j.assignedToId] = j._count.id; });
-
-  const khatmMap: Record<string, number> = {};
-  completedKhatmCounts.forEach((k) => {
-    k.participations.forEach((p) => {
-      khatmMap[p.userId] = (khatmMap[p.userId] ?? 0) + 1;
-    });
-  });
-
-  return {
-    allTime,
-    weekly:       mergePoints(weeklyUsers, weeklyPoints),
-    monthly:      mergePoints(monthlyUsers, monthlyPoints),
-    currentUserRank: currentUserRank + 1,
-    juzMap,
-    khatmMap,
-  };
-}
-
-// ─── Page ─────────────────────────────────────────────────────────────────────
-
-export default async function LeaderboardPage() {
-  const session = await auth();
-  if (!session) redirect("/auth/signin");
-
-  const data = await getLeaderboardData(session.user.id);
-  const isAdminViewer = isAdminRole(session.user.role);
+export default async function StatsPage() {
+  const current = await getCurrentUser();
+  const data = await getStats(current.id);
 
   return (
     <MainLayout>
-      <LeaderboardClient
-        allTime={JSON.parse(JSON.stringify(maskIncognitoList(data.allTime, isAdminViewer)))}
-        weekly={JSON.parse(JSON.stringify(maskIncognitoList(data.weekly, isAdminViewer)))}
-        monthly={JSON.parse(JSON.stringify(maskIncognitoList(data.monthly, isAdminViewer)))}
-        currentUserId={session.user.id}
-        currentUserRank={data.currentUserRank}
-        juzMap={data.juzMap}
-        khatmMap={data.khatmMap}
+      <StatsClient
+        user={JSON.parse(JSON.stringify(data.user))}
+        dailyActivities={JSON.parse(JSON.stringify(data.dailyActivities))}
+        recentCoins={JSON.parse(JSON.stringify(data.recentCoins))}
+        recentBookLogs={JSON.parse(JSON.stringify(data.recentBookLogs))}
+        completedKhatms={data.completedKhatms}
+        completedBooks={data.completedBooks}
       />
     </MainLayout>
   );

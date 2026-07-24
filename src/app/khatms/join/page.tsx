@@ -1,22 +1,18 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { MainLayout } from "@/components/layout/main-layout";
 import { JoinByCodeClient } from "./join-by-code-client";
 
 export const metadata = { title: "Xatmga qo'shilish" };
+export const dynamic = "force-dynamic";
 
 export default async function JoinByCodePage({
   searchParams,
 }: {
   searchParams: Promise<{ code?: string; khatmId?: string }>;
 }) {
-  const session = await auth();
+  const current = await getCurrentUser();
   const { code } = await searchParams;
-
-  if (!session) {
-    redirect(`/auth/signin?callbackUrl=/khatms/join${code ? `?code=${code}` : ""}`);
-  }
 
   // Agar code URL da kelgan bo'lsa — xatmni topib ko'rsatamiz
   let khatmByCode = null;
@@ -40,7 +36,7 @@ export default async function JoinByCodePage({
       <JoinByCodeClient
         initialCode={code ?? ""}
         khatmByCode={khatmByCode ? JSON.parse(JSON.stringify(khatmByCode)) : null}
-        userId={session.user.id}
+        userId={current.id}
       />
     </MainLayout>
   );

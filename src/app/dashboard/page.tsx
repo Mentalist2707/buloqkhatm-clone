@@ -1,52 +1,48 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { MainLayout } from "@/components/layout/main-layout";
 import { DashboardClient } from "./dashboard-client";
-import { todayUTC, maskIncognitoList, maskIncognitoUser, isAdminRole } from "@/lib/utils";
+import { todayUTC } from "@/lib/utils";
 
-export const metadata = { title: "Dashboard" };
+export const metadata = { title: "Bosh sahifa" };
+export const dynamic = "force-dynamic";
 
 async function getDashboardData(userId: string) {
   const today = todayUTC();
 
   const [
     user,
-    globalJuzCompleted,
-    globalJuzTotal,
-    globalUsers,
+    myJuzCompleted,
+    myJuzTotal,
     activeKhatms,
     completedKhatms,
     myActiveJuz,
     recentKhatms,
-    topUsers,
     todayActivity,
     recentFeed,
     myBadges,
+    readingBooks,
   ] = await Promise.all([
-    // Full user with coins/streak
     prisma.user.findUnique({
       where: { id: userId },
       select: {
         id: true, firstName: true, lastName: true, name: true,
         photoUrl: true, image: true, coins: true, level: true,
         streakDays: true, totalJuzRead: true, totalKhatms: true,
-        totalPagesRead: true, lastDailyAt: true, telegramId: true,
+        totalPagesRead: true, totalBooksRead: true, lastDailyAt: true,
         lastActiveAt: true,
       },
     }),
 
-    // Global progress: completed juz
-    prisma.juz.count({ where: { status: "COMPLETED" } }),
-    // Total juz in all active+completed khatms
-    prisma.juz.count({ where: { khatm: { status: { in: ["ACTIVE", "COMPLETED"] } } } }),
-    // Total active users
-    prisma.user.count({ where: { isBanned: false } }),
+    // Mening poralarim: yakunlangan
+    prisma.juz.count({ where: { status: "COMPLETED", khatm: { participations: { some: { userId } } } } }),
+    // Mening xatmlarimdagi jami pora
+    prisma.juz.count({ where: { khatm: { participations: { some: { userId } }, status: { in: ["ACTIVE", "COMPLETED"] } } } }),
 
-    prisma.khatm.count({ where: { status: "ACTIVE" } }),
-    prisma.khatm.count({ where: { status: "COMPLETED" } }),
+    prisma.khatm.count({ where: { status: "ACTIVE", participations: { some: { userId } } } }),
+    prisma.khatm.count({ where: { status: "COMPLETED", participations: { some: { userId } } } }),
 
-    // My active juz
+    // Faol poralarim
     prisma.juz.findMany({
       where:   { assignedToId: userId, status: "RESERVED" },
       include: {
@@ -56,12 +52,11 @@ async function getDashboardData(userId: string) {
       take: 4,
     }),
 
-    // Active khatms (private faqat a'zo/creator ga ko'rinadi)
+    // Faol xatmlar
     prisma.khatm.findMany({
       where: {
         status: "ACTIVE",
         OR: [
-          { type: "GLOBAL" },
           { createdById: userId },
           { participations: { some: { userId } } },
         ],
@@ -75,86 +70,66 @@ async function getDashboardData(userId: string) {
       take: 4,
     }),
 
-    // Top 5 users (by coins) — SUPER_ADMIN ko'rsatilmaydi
-    prisma.user.findMany({
-      where: { role: { not: "SUPER_ADMIN" } },
-      orderBy: { coins: "desc" },
-      take: 5,
-      select: {
-        id: true, firstName: true, lastName: true, name: true,
-        photoUrl: true, image: true, coins: true, level: true,
-        streakDays: true, isIncognito: true,
-      },
-    }),
-
     // Bugungi faollik
     prisma.dailyActivity.findUnique({
       where: { userId_date: { userId, date: today } },
     }),
 
-    // Live feed — so'nggi 6 ta coin transaction (SUPER_ADMIN ko'rsatilmaydi)
+    // So'nggi coin tranzaksiyalar
     prisma.coinTransaction.findMany({
-      where:    { user: { role: { not: "SUPER_ADMIN" } } },
+      where:    { userId },
       orderBy:  { createdAt: "desc" },
       take:     6,
-      include:  { user: { select: { firstName: true, lastName: true, name: true, photoUrl: true, image: true, isIncognito: true } } },
     }),
 
-    // My badges
+    // Medallar
     prisma.userBadge.findMany({
       where:   { userId },
       include: { badge: true },
-      take:    6,
+      take:    8,
+    }),
+
+    // O'qilayotgan kitoblar
+    prisma.book.findMany({
+      where:   { userId, status: "READING" },
+      orderBy: { updatedAt: "desc" },
+      take:    4,
     }),
   ]);
 
   return {
     user,
-    global: {
-      juzCompleted: globalJuzCompleted,
-      juzTotal:     globalJuzTotal,
-      users:        globalUsers,
+    stats: {
+      juzCompleted: myJuzCompleted,
+      juzTotal:     myJuzTotal,
       activeKhatms,
       completedKhatms,
     },
     myActiveJuz,
     recentKhatms,
-    topUsers,
     todayActivity,
     recentFeed,
     myBadges,
+    readingBooks,
   };
 }
 
 export default async function DashboardPage() {
-  const session = await auth();
-  if (!session) redirect("/auth/signin");
-
-  const data = await getDashboardData(session.user.id);
-  const isAdminViewer = isAdminRole(session.user.role);
-
-  // Inkognito feed foydalanuvchilarini anonimlashtirish (admin bo'lmagan ko'ruvchi uchun)
-  let feedN = 0;
-  const maskedFeed = data.recentFeed.map((tx: any) => {
-    if (tx.user?.isIncognito && !isAdminViewer) {
-      feedN += 1;
-      return { ...tx, user: maskIncognitoUser(tx.user, false, feedN) };
-    }
-    return tx;
-  });
+  const current = await getCurrentUser();
+  const data = await getDashboardData(current.id);
 
   return (
     <MainLayout>
       <DashboardClient
-        session={session}
+        userId={current.id}
         user={JSON.parse(JSON.stringify(data.user))}
-        global={data.global}
+        stats={data.stats}
         myActiveJuz={JSON.parse(JSON.stringify(data.myActiveJuz))}
         recentKhatms={JSON.parse(JSON.stringify(data.recentKhatms))}
-        topUsers={JSON.parse(JSON.stringify(maskIncognitoList(data.topUsers, isAdminViewer)))}
         todayActivity={JSON.parse(JSON.stringify(data.todayActivity))}
-        recentFeed={JSON.parse(JSON.stringify(maskedFeed))}
+        recentFeed={JSON.parse(JSON.stringify(data.recentFeed))}
         myBadges={JSON.parse(JSON.stringify(data.myBadges))}
+        readingBooks={JSON.parse(JSON.stringify(data.readingBooks))}
       />
     </MainLayout>
   );

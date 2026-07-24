@@ -56,10 +56,10 @@ export const COIN_RULES = {
   JUZ_COMPLETED:     25,
   KHATM_PARTICIPANT: 25,
   KHATM_CREATOR:     100,
+  BOOK_COMPLETED:    50,
   STREAK_7:          20,
   STREAK_30:         50,
-  REFERRAL:          15,
-  ADMIN_BONUS:       0,   // miqdor admin tomonidan belgilanadi
+  ADMIN_BONUS:       0,
 } as const;
 
 /** Eski kod bilan moslik uchun alias */
@@ -67,7 +67,6 @@ export const POINT_RULES = {
   JUZ_COMPLETED:    COIN_RULES.JUZ_COMPLETED,
   KHATM_COMPLETED:  COIN_RULES.KHATM_PARTICIPANT,
   STREAK_7_DAYS:    COIN_RULES.STREAK_7,
-  REFERRAL:         COIN_RULES.REFERRAL,
 } as const;
 
 // ─── Juz (Pora) config ────────────────────────────────────────────────────────
@@ -115,58 +114,6 @@ export const JUZ_NAMES: Record<number, string> = {
   29: "Tabarokallazi",
   30: "Amma Yatasa'alun (Juz Amma)",
 };
-
-// ─── Maxfiylik / Inkognito ────────────────────────────────────────────────────
-
-/** Faqat ADMIN va SUPER_ADMIN inkognito foydalanuvchilarning real ma'lumotini ko'radi */
-export function isAdminRole(role?: string | null): boolean {
-  return role === "ADMIN" || role === "SUPER_ADMIN";
-}
-
-interface MaskableUser {
-  id?: string;
-  firstName?: string | null;
-  lastName?:  string | null;
-  name?:      string | null;
-  username?:  string | null;
-  photoUrl?:  string | null;
-  image?:     string | null;
-  isIncognito?: boolean | null;
-}
-
-/** Inkognito foydalanuvchini (admin bo'lmagan ko'ruvchi uchun) "Inkognito N" ga aylantiradi */
-export function maskIncognitoUser<T extends MaskableUser>(
-  user: T,
-  isAdminViewer: boolean,
-  index: number
-): T {
-  if (!user || !user.isIncognito || isAdminViewer) return user;
-  const label = `Inkognito ${index}`;
-  return {
-    ...user,
-    firstName: label,
-    lastName:  null,
-    name:      label,
-    username:  null,
-    photoUrl:  null,
-    image:     null,
-  } as T;
-}
-
-/** Ro'yxatdagi inkognito foydalanuvchilarni ketma-ket raqamlab anonimlashtiradi */
-export function maskIncognitoList<T extends MaskableUser>(
-  list: T[],
-  isAdminViewer: boolean
-): T[] {
-  let n = 0;
-  return list.map((u) => {
-    if (u && u.isIncognito && !isAdminViewer) {
-      n += 1;
-      return maskIncognitoUser(u, false, n);
-    }
-    return u;
-  });
-}
 
 // ─── Date helpers ─────────────────────────────────────────────────────────────
 
@@ -229,7 +176,8 @@ export const BADGE_CONFIG = {
   KHATM_100: { name: "100 Xatm",       icon: "👑", description: "100 ta xatmni yakunladi"    },
   STREAK_7:  { name: "7 Kun Streak",   icon: "🔥", description: "7 kun ketma-ket faol"       },
   STREAK_30: { name: "30 Kun Streak",  icon: "💎", description: "30 kun ketma-ket faol"      },
-  REFERRAL:  { name: "Do'st Taklif",   icon: "🤝", description: "Do'stini platformaga taklif qildi" },
+  BOOK_1:    { name: "Birinchi Kitob", icon: "📚", description: "1 ta kitobni o'qib tugatdi" },
+  BOOK_10:   { name: "10 Kitob",       icon: "🏆", description: "10 ta kitobni o'qib tugatdi"},
 } as const;
 
 // ─── Coin display ─────────────────────────────────────────────────────────────
@@ -242,8 +190,8 @@ export const COIN_REASON_DISPLAY: Record<string, { icon: string; label: string; 
   KHATM_CREATOR:     { icon: "👑",  label: "Xatm muallifi bonus",color: "text-purple-600"},
   STREAK_7:          { icon: "🔥",  label: "7 kun streak",       color: "text-orange-600"},
   STREAK_30:         { icon: "💎",  label: "30 kun streak",      color: "text-indigo-600"},
-  REFERRAL:          { icon: "🤝",  label: "Do'st taklif",       color: "text-pink-600"  },
-  ADMIN_BONUS:       { icon: "⭐",  label: "Admin bonus",        color: "text-amber-600" },
+  BOOK_COMPLETED:    { icon: "📚",  label: "Kitob yakunlandi",   color: "text-cyan-600"  },
+  ADMIN_BONUS:       { icon: "⭐",  label: "Bonus",              color: "text-amber-600" },
   ADMIN_DEDUCT:      { icon: "⬇️",  label: "Admin ayirdi",       color: "text-red-600"   },
   PAGE_READ:         { icon: "📄",  label: "Sahifa o'qildi",     color: "text-gray-600"  },
 };

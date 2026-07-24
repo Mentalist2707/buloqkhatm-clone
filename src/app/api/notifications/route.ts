@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getCurrentUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 // GET /api/notifications — list + unread count
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
-    }
+    const userId = await getCurrentUserId();
 
     const notifications = await prisma.notification.findMany({
-      where: { userId: session.user.id },
+      where: { userId },
       orderBy: { createdAt: "desc" },
       take: 50,
     });
@@ -27,24 +26,19 @@ export async function GET(req: NextRequest) {
 // PATCH /api/notifications — mark all as read or single
 export async function PATCH(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
-    }
+    const userId = await getCurrentUserId();
 
     const body = await req.json().catch(() => ({}));
     const { id } = body; // optional: single notification id
 
     if (id) {
-      // Mark single as read
       await prisma.notification.update({
-        where: { id, userId: session.user.id },
+        where: { id, userId },
         data: { isRead: true },
       });
     } else {
-      // Mark all as read
       await prisma.notification.updateMany({
-        where: { userId: session.user.id, isRead: false },
+        where: { userId, isRead: false },
         data: { isRead: true },
       });
     }
@@ -58,21 +52,18 @@ export async function PATCH(req: NextRequest) {
 // DELETE /api/notifications — delete all or single
 export async function DELETE(req: NextRequest) {
   try {
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
-    }
+    const userId = await getCurrentUserId();
 
     const body = await req.json().catch(() => ({}));
     const { id } = body;
 
     if (id) {
       await prisma.notification.delete({
-        where: { id, userId: session.user.id },
+        where: { id, userId },
       });
     } else {
       await prisma.notification.deleteMany({
-        where: { userId: session.user.id },
+        where: { userId },
       });
     }
 

@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getCurrentUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+
+export const dynamic = "force-dynamic";
 
 /**
  * POST /api/khatms/[id]/join
  *
  * GLOBAL: to'g'ridan-to'g'ri qo'shiladi
  * PRIVATE: inviteCode bo'lsa → to'g'ri qo'shiladi
- *          inviteCode yo'q   → JoinRequest yaratiladi (creator tasdiqlashi kerak)
+ *          inviteCode yo'q   → JoinRequest yaratiladi
  */
 export async function POST(
   req: NextRequest,
@@ -15,12 +17,7 @@ export async function POST(
 ) {
   try {
     const rp = await context.params;
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
-    }
-
-    const userId = session.user.id;
+    const userId = await getCurrentUserId();
     const body   = await req.json().catch(() => ({}));
     const { inviteCode, message } = body;
 

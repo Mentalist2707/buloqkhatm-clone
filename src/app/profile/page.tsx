@@ -1,10 +1,10 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { MainLayout } from "@/components/layout/main-layout";
 import { ProfileClient } from "./profile-client";
 
 export const metadata = { title: "Profilim" };
+export const dynamic = "force-dynamic";
 
 async function getProfileData(userId: string) {
   const user = await prisma.user.findUnique({
@@ -42,10 +42,9 @@ async function getProfileData(userId: string) {
 }
 
 export default async function ProfilePage() {
-  const session = await auth();
-  if (!session) redirect("/auth/signin");
+  const current = await getCurrentUser();
 
-  const data = await getProfileData(session.user.id);
+  const data = await getProfileData(current.id);
 
   return (
     <MainLayout>

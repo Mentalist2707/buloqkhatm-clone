@@ -1,18 +1,16 @@
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
+import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { MainLayout } from "@/components/layout/main-layout";
 import { NotificationsClient } from "./notifications-client";
 
 export const metadata = { title: "Bildirishnomalar" };
+export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
-  const session = await auth();
-  if (!session) redirect("/auth/signin");
+  const current = await getCurrentUser();
 
-  // Fetch all notifications (do NOT auto-mark-read here — client handles it)
   const notifications = await prisma.notification.findMany({
-    where: { userId: session.user.id },
+    where: { userId: current.id },
     orderBy: { createdAt: "desc" },
     take: 50,
   });

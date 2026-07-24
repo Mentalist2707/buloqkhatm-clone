@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { getCurrentUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
+export const dynamic = "force-dynamic";
+
 /**
- * GET /api/khatms/[id]/requests — pending so'rovlar ro'yxati (creator uchun)
+ * GET /api/khatms/[id]/requests — pending so'rovlar ro'yxati
  * PATCH /api/khatms/[id]/requests — so'rovni tasdiqlash / rad etish
  */
 
@@ -13,10 +15,6 @@ export async function GET(
 ) {
   try {
     const rp = await context.params;
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
-    }
 
     const khatm = await prisma.khatm.findUnique({
       where:  { id: rp.id },
@@ -25,13 +23,6 @@ export async function GET(
 
     if (!khatm) {
       return NextResponse.json({ error: "Xatm topilmadi" }, { status: 404 });
-    }
-
-    const isAdmin   = ["ADMIN", "SUPER_ADMIN", "MODERATOR"].includes(session.user.role);
-    const isCreator = khatm.createdById === session.user.id;
-
-    if (!isCreator && !isAdmin) {
-      return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
     }
 
     const requests = await prisma.joinRequest.findMany({
@@ -60,10 +51,6 @@ export async function PATCH(
 ) {
   try {
     const rp = await context.params;
-    const session = await auth();
-    if (!session) {
-      return NextResponse.json({ error: "Kirish talab qilinadi" }, { status: 401 });
-    }
 
     const { requestId, action } = await req.json();
     // action: "approve" | "reject"
@@ -76,13 +63,6 @@ export async function PATCH(
       where:  { id: rp.id },
       select: { createdById: true, title: true },
     });
-
-    const isCreator = khatm?.createdById === session.user.id;
-    const isAdmin   = ["ADMIN", "SUPER_ADMIN"].includes(session.user.role);
-
-    if (!isCreator && !isAdmin) {
-      return NextResponse.json({ error: "Ruxsat yo'q" }, { status: 403 });
-    }
 
     const joinRequest = await prisma.joinRequest.findUnique({
       where: { id: requestId },
