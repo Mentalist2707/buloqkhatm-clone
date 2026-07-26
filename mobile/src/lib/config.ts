@@ -3,15 +3,19 @@ import Constants from "expo-constants";
 /**
  * Backend API manzili.
  *
- * MUHIM: Telefon (Expo Go) kompyuteringizdagi Next.js serverga ulanishi kerak.
- * Shu sababli "localhost" ISHLAMAYDI — kompyuteringizning LAN IP manzilini yozing.
+ * Standalone (APK) build'da bu qiymat build paytida app.json -> expo.extra.apiBaseUrl
+ * dan olinadi. Agar topilmasa, DEFAULT_API ishlatiladi.
  *
- * IP ni bilish: kompyuterda `ipconfig` (Windows) -> IPv4 Address (masalan 192.168.1.5).
- * Keyin app.json -> expo.extra.apiBaseUrl ni yangilang yoki quyidagi DEFAULT ni.
+ * Wi-Fi'siz istalgan joyda ishlashi uchun bu Vercel (internet) manzili.
  */
 const DEFAULT_API = "https://buloqkhatm-clone.vercel.app";
 
-const fromExtra =
-  (Constants.expoConfig?.extra as { apiBaseUrl?: string } | undefined)?.apiBaseUrl;
+// Turli Expo runtime'lar uchun (expoConfig / manifest / manifest2) barcha joyni tekshiramiz
+const anyC = Constants as any;
+const fromExtra: unknown =
+  Constants.expoConfig?.extra?.apiBaseUrl ??
+  anyC?.manifest?.extra?.apiBaseUrl ??
+  anyC?.manifest2?.extra?.expoClient?.extra?.apiBaseUrl;
 
-export const API_BASE_URL = (fromExtra && fromExtra.trim()) || DEFAULT_API;
+export const API_BASE_URL =
+  (typeof fromExtra === "string" && fromExtra.trim()) ? fromExtra.trim() : DEFAULT_API;

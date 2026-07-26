@@ -5,6 +5,7 @@ import {
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { colors, radius, gradients, shadow } from "@/lib/theme";
+import { API_BASE_URL } from "@/lib/config";
 
 export function Card({ children, style, tint }:
   { children: React.ReactNode; style?: StyleProp<ViewStyle>; tint?: string }) {
@@ -95,8 +96,12 @@ export function ErrorView({ message, onRetry }: { message: string; onRetry?: () 
       <Text style={{ fontSize: 44 }}>📡</Text>
       <Text style={[styles.title, { textAlign: "center", marginTop: 10 }]}>Ulanib bo'lmadi</Text>
       <Text style={[styles.muted, { textAlign: "center", marginTop: 6, paddingHorizontal: 24 }]}>{message}</Text>
-      <Text style={[styles.muted, { textAlign: "center", marginTop: 8, fontSize: 12 }]}>
-        API manzilini tekshiring (src/lib/config.ts) — server ishlab turibdimi?
+      <View style={styles.urlBox}>
+        <Text style={styles.urlLabel}>Ulanmoqda:</Text>
+        <Text style={styles.urlText} selectable>{API_BASE_URL}</Text>
+      </View>
+      <Text style={[styles.muted, { textAlign: "center", marginTop: 8, fontSize: 12, paddingHorizontal: 24 }]}>
+        Agar manzil localhost yoki 192.168.* bo'lsa — APK eski. Yangi manzil bilan qayta build qiling.
       </Text>
       {onRetry ? <Btn label="Qayta urinish" onPress={onRetry} style={{ marginTop: 18, minWidth: 160 }} /> : null}
     </View>
@@ -129,6 +134,9 @@ const styles = StyleSheet.create({
   pill: { paddingHorizontal: 11, paddingVertical: 4, borderRadius: radius.full, alignSelf: "flex-start" },
   pillText: { fontSize: 11, fontWeight: "800", letterSpacing: 0.2 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, backgroundColor: colors.bg },
+  urlBox: { marginTop: 12, paddingHorizontal: 14, paddingVertical: 8, borderRadius: radius.md, backgroundColor: colors.borderSoft, alignItems: "center" },
+  urlLabel: { fontSize: 10, color: colors.textLight, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
+  urlText: { fontSize: 12, color: colors.text, fontWeight: "600", marginTop: 2 },
   h1: { fontSize: 26, fontWeight: "900", color: colors.text, letterSpacing: -0.5 },
   h2: { fontSize: 19, fontWeight: "800", color: colors.text, letterSpacing: -0.3 },
   title: { fontSize: 15, fontWeight: "700", color: colors.text },
