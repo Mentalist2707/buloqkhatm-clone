@@ -32,7 +32,7 @@ export function Progress({ value, colorsArr, color = colors.emerald, track = "#e
 }
 
 export function Btn({ label, onPress, variant = "gradient", disabled, loading, style, icon }:
-  { label: string; onPress?: () => void; variant?: "gradient" | "emerald" | "outline" | "danger" | "ghost";
+  { label: string; onPress?: () => void; variant?: "gradient" | "gold" | "emerald" | "outline" | "danger" | "ghost";
     disabled?: boolean; loading?: boolean; style?: StyleProp<ViewStyle>; icon?: React.ReactNode }) {
 
   const content = (fg: string) => (
@@ -46,13 +46,15 @@ export function Btn({ label, onPress, variant = "gradient", disabled, loading, s
     </>
   );
 
-  if (variant === "gradient") {
+  if (variant === "gradient" || variant === "gold") {
+    const grad = variant === "gold" ? gradients.gold : gradients.emerald;
+    const fg = variant === "gold" ? colors.emeraldDeep : "#fff";
     return (
       <Pressable onPress={onPress} disabled={disabled || loading}
         style={({ pressed }) => [{ opacity: disabled ? 0.5 : pressed ? 0.9 : 1, transform: [{ scale: pressed ? 0.985 : 1 }] }, style]}>
-        <LinearGradient colors={gradients.emerald} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+        <LinearGradient colors={grad} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
           style={[styles.btn, shadow.sm]}>
-          {content("#fff")}
+          {content(fg)}
         </LinearGradient>
       </Pressable>
     );
@@ -104,6 +106,26 @@ export function ErrorView({ message, onRetry }: { message: string; onRetry?: () 
         Agar manzil localhost yoki 192.168.* bo'lsa — APK eski. Yangi manzil bilan qayta build qiling.
       </Text>
       {onRetry ? <Btn label="Qayta urinish" onPress={onRetry} style={{ marginTop: 18, minWidth: 160 }} /> : null}
+    </View>
+  );
+}
+
+/** Arabcha kalligrafiya — Bismillah */
+export function Bismillah({ color = colors.gold, size = 20 }: { color?: string; size?: number }) {
+  return (
+    <Text style={{ color, fontSize: size, textAlign: "center", writingDirection: "rtl", opacity: 0.95 }}>
+      بِسْمِ اللّٰهِ الرَّحْمٰنِ الرَّحِيْمِ
+    </Text>
+  );
+}
+
+/** Nafis naqsh ajratgich — ikki nozik chiziq + markazda romb */
+export function Ornament({ color = colors.gold, style }: { color?: string; style?: StyleProp<ViewStyle> }) {
+  return (
+    <View style={[{ flexDirection: "row", alignItems: "center", gap: 8 }, style]}>
+      <View style={{ flex: 1, height: 1, backgroundColor: color, opacity: 0.35 }} />
+      <Text style={{ color, fontSize: 10, opacity: 0.9 }}>◆</Text>
+      <View style={{ flex: 1, height: 1, backgroundColor: color, opacity: 0.35 }} />
     </View>
   );
 }

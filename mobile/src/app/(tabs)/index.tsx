@@ -9,7 +9,7 @@ import { api, Book, Khatm } from "@/lib/api";
 import { useUser } from "@/lib/user";
 import { computeBookPlan } from "@/lib/plan";
 import { colors, radius, gradients, shadow, getUserLevel, getNextLevel, getLevelProgress } from "@/lib/theme";
-import { Card, Progress, Loading, ErrorView } from "@/components/ui";
+import { Card, Progress, Loading, ErrorView, Bismillah, Ornament } from "@/components/ui";
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -64,13 +64,17 @@ export default function DashboardScreen() {
         <LinearGradient colors={gradients.emerald} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={[s.hero, shadow.glow]}>
           <View style={s.heroGlow1} />
           <View style={s.heroGlow2} />
+          <View style={{ alignItems: "center", marginBottom: 14 }}>
+            <Bismillah color="#e8d9a8" size={17} />
+            <Ornament color="#d9be6a" style={{ marginTop: 8, width: 140 }} />
+          </View>
           <View style={s.heroTopRow}>
             <View style={{ flex: 1 }}>
               <Text style={s.heroHello}>Assalomu alaykum 👋</Text>
               <Text style={s.heroName}>{name}</Text>
             </View>
             <View style={s.levelChip}>
-              <Ionicons name="sparkles" size={12} color="#fff" />
+              <Ionicons name="sparkles" size={12} color="#e8d9a8" />
               <Text style={s.levelChipText}>{level.name}</Text>
             </View>
           </View>
@@ -96,15 +100,15 @@ export default function DashboardScreen() {
               {nextLevel ? <Text style={s.heroLevelNext}>{nextLevel.name} · {nextLevel.minPoints - coins} coin</Text> : <Text style={s.heroLevelNext}>MAX 🏆</Text>}
             </View>
             <View style={{ marginTop: 8 }}>
-              <Progress value={lvlProgress} colorsArr={["#fde68a", "#fbbf24"]} track="rgba(255,255,255,0.22)" height={9} />
+              <Progress value={lvlProgress} colorsArr={gradients.gold} track="rgba(255,255,255,0.20)" height={9} />
             </View>
           </View>
         </LinearGradient>
 
         {/* Quick actions */}
         <View style={s.quickRow}>
-          <QuickAction grad={gradients.blue} icon="add" label="Yangi Kitob" onPress={() => router.push("/book/create")} />
-          <QuickAction grad={gradients.purple} icon="stats-chart" label="Statistika" onPress={() => router.push("/(tabs)/stats")} />
+          <QuickAction grad={gradients.emerald} icon="add" label="Yangi Kitob" onPress={() => router.push("/book/create")} />
+          <QuickAction grad={gradients.blue} icon="stats-chart" label="Statistika" onPress={() => router.push("/(tabs)/stats")} />
           <QuickAction grad={gradients.emeraldBright} icon="book" label="Xatmlar" onPress={() => router.push("/(tabs)/khatms")} />
         </View>
 
@@ -216,12 +220,12 @@ const s = StyleSheet.create({
   heroTopRow: { flexDirection: "row", alignItems: "flex-start", gap: 10 },
   heroHello: { color: "rgba(255,255,255,0.85)", fontSize: 13, fontWeight: "600" },
   heroName: { color: "#fff", fontSize: 24, fontWeight: "900", marginTop: 3, letterSpacing: -0.4 },
-  levelChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(255,255,255,0.18)", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
-  levelChipText: { color: "#fff", fontSize: 11, fontWeight: "800" },
+  levelChip: { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(217,190,106,0.20)", borderWidth: 1, borderColor: "rgba(217,190,106,0.5)", paddingHorizontal: 10, paddingVertical: 5, borderRadius: 999 },
+  levelChipText: { color: "#e8d9a8", fontSize: 11, fontWeight: "800" },
   statRow: { flexDirection: "row", gap: 8, marginTop: 20 },
-  statBox: { flex: 1, backgroundColor: "rgba(255,255,255,0.14)", borderRadius: radius.md, paddingVertical: 11, alignItems: "center", gap: 3 },
-  statValue: { color: "#fff", fontSize: 17, fontWeight: "900" },
-  statLabel: { color: "rgba(255,255,255,0.75)", fontSize: 10, fontWeight: "600" },
+  statBox: { flex: 1, backgroundColor: "rgba(255,255,255,0.12)", borderRadius: radius.md, paddingVertical: 11, alignItems: "center", gap: 3, borderWidth: 1, borderColor: "rgba(232,217,168,0.14)" },
+  statValue: { color: "#fdf6e3", fontSize: 17, fontWeight: "900" },
+  statLabel: { color: "rgba(253,246,227,0.7)", fontSize: 10, fontWeight: "600" },
   heroLevel: { color: "rgba(255,255,255,0.9)", fontSize: 12, fontWeight: "700" },
   heroLevelNext: { color: "rgba(255,255,255,0.7)", fontSize: 11, fontWeight: "600" },
   quickRow: { flexDirection: "row", gap: 10, marginTop: 16 },
