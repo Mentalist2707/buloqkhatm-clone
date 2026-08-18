@@ -39,6 +39,9 @@ export async function POST(
     if (book.status === "COMPLETED") {
       return NextResponse.json({ error: "Kitob allaqachon yakunlangan" }, { status: 400 });
     }
+    if (book.status === "PAUSED") {
+      return NextResponse.json({ error: "Kitob to'xtatilgan. Davom ettiring" }, { status: 400 });
+    }
 
     const oldPage = book.currentPage;
 

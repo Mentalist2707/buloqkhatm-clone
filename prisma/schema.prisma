@@ -326,6 +326,7 @@ model Book {
   targetDays  Int        @map("target_days")       // necha kunda tugatish rejasi
   targetDate  DateTime?  @map("target_date")       // reja tugash sanasi (startDate + targetDays)
   completedAt DateTime?  @map("completed_at")
+  pausedAt    DateTime?  @map("paused_at")         // to'xtatilgan vaqt (PAUSED bo'lganda)
 
   status      BookStatus @default(READING)
 

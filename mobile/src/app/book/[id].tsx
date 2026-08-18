@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, Alert, RefreshControl } from "react-native";
+import { View, Text, StyleSheet, ScrollView, TextInput, Pressable, Alert, RefreshControl, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter, useFocusEffect, useNavigation } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
@@ -21,6 +21,7 @@ export default function BookDetailScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -63,6 +64,25 @@ export default function BookDetailScreen() {
     }
   };
 
+  const toggleStatus = async () => {
+    if (!book) return;
+    setStatusUpdating(true);
+    try {
+      const next = book.status === "PAUSED" ? "READING" : "PAUSED";
+      const updated = await api.patch<Book>(`/api/books/${book.id}`, { status: next });
+      setBook(updated);
+      if (next === "PAUSED") {
+        Alert.alert("⏸️ Kitob to'xtatildi", "O'qish rejasi to'xtatildi. Davom ettirish mumkin.");
+      } else {
+        Alert.alert("▶️ Davom ettirildi", "Reja to'xtatilgan vaqtga uzaytirildi. Barakalla!");
+      }
+    } catch (e: any) {
+      Alert.alert("Xato", e?.message ?? "Xatolik");
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
+
   const remove = () => {
     Alert.alert("Kitobni o'chirasizmi?", "Kitob va tarixi butunlay o'chiriladi.", [
       { text: "Bekor", style: "cancel" },
@@ -78,6 +98,7 @@ export default function BookDetailScreen() {
 
   const plan = computeBookPlan(book);
   const logs = book.logs ?? [];
+  const isPaused = book.status === "PAUSED";
 
   return (
     <ScrollView
@@ -100,7 +121,9 @@ export default function BookDetailScreen() {
           <View style={{ marginTop: 8 }}>
             {plan.isCompleted
               ? <Pill text="Yakunlangan" color={colors.blue} bg={colors.blueBg} />
-              : <Pill text="O'qilmoqda" color={colors.emeraldDark} bg={colors.emeraldBg} />}
+              : isPaused
+                ? <Pill text="To'xtatilgan" color={colors.textMuted} bg="#f1f5f9" />
+                : <Pill text="O'qilmoqda" color={colors.emeraldDark} bg={colors.emeraldBg} />}
           </View>
           <View style={{ marginTop: 10 }}>
             <Progress value={plan.percent} colorsArr={plan.isCompleted ? gradients.blue : gradients.emeraldBright} height={10} />
@@ -112,8 +135,30 @@ export default function BookDetailScreen() {
         </View>
       </Card>
 
-      {/* Plan */}
+      {/* Pause / Resume */}
       {!plan.isCompleted ? (
+        <Card style={{ marginTop: 14, backgroundColor: isPaused ? "#f8fafc" : colors.card, borderColor: isPaused ? colors.border : undefined }}>
+          {isPaused ? (
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <View style={s.pauseIcon}><Ionicons name="pause" size={20} color={colors.textMuted} /></View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontWeight: "800", color: colors.text }}>Kitob to'xtatilgan</Text>
+                <Text style={[s.smallMuted, { marginTop: 2 }]}>Davom etganda reja uzaytiriladi</Text>
+              </View>
+              <Btn label="Davom etish" onPress={toggleStatus} loading={statusUpdating} style={{ paddingHorizontal: 16 }} />
+            </View>
+          ) : (
+            <Pressable onPress={toggleStatus} disabled={statusUpdating} style={[s.targetBtn, { justifyContent: "center" }]}>
+              {statusUpdating
+                ? <ActivityIndicator size="small" color={colors.textMuted} />
+                : <><Ionicons name="pause" size={15} color={colors.textMuted} /><Text style={s.targetBtnText}>To'xtatish</Text></>}
+            </Pressable>
+          )}
+        </Card>
+      ) : null}
+
+      {/* Plan */}
+      {!plan.isCompleted && !isPaused ? (
         <>
           <Card style={{ marginTop: 14 }}>
             <Text style={s.section}>Reja</Text>
@@ -220,6 +265,7 @@ const s = StyleSheet.create({
   targetBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 10, borderWidth: 1, borderColor: colors.emeraldBorder, borderRadius: radius.md, paddingVertical: 10, backgroundColor: colors.emeraldBg },
   targetBtnText: { color: colors.emeraldDark, fontWeight: "700", fontSize: 12 },
   doneIcon: { height: 44, width: 44, borderRadius: radius.md, backgroundColor: colors.blue, alignItems: "center", justifyContent: "center" },
+  pauseIcon: { height: 40, width: 40, borderRadius: radius.md, backgroundColor: "#e2e8f0", alignItems: "center", justifyContent: "center" },
   logRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   logIcon: { height: 34, width: 34, borderRadius: 8, backgroundColor: colors.emeraldBg, alignItems: "center", justifyContent: "center" },
 });

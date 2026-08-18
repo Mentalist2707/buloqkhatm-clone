@@ -62,7 +62,7 @@ function BookCard({ book }: { book: any }) {
               </div>
               <Progress value={plan.percent} className="h-2" />
 
-              {!plan.isCompleted && (
+              {!plan.isCompleted && book.status !== "PAUSED" && (
                 <div className="flex items-center gap-3 text-[10px] text-muted-foreground pt-0.5">
                   <span className="flex items-center gap-1">
                     <Target className="h-3 w-3" />
@@ -88,6 +88,7 @@ export function BooksClient({ books }: { books: any[] }) {
   const filtered = books.filter((b) => filter === "ALL" || b.status === filter);
   const reading   = books.filter((b) => b.status === "READING").length;
   const completed = books.filter((b) => b.status === "COMPLETED").length;
+  const paused    = books.filter((b) => b.status === "PAUSED").length;
 
   return (
     <div className="space-y-5">
@@ -120,7 +121,7 @@ export function BooksClient({ books }: { books: any[] }) {
           ["ALL", `Barchasi (${books.length})`],
           ["READING", `O'qilmoqda (${reading})`],
           ["COMPLETED", `Yakunlangan (${completed})`],
-          ["PAUSED", "To'xtatilgan"],
+          ["PAUSED", `To'xtatilgan (${paused})`],
         ] as [Filter, string][]).map(([f, label]) => (
           <Button
             key={f}

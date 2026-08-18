@@ -98,7 +98,7 @@ export default function BooksScreen() {
                         <Text style={s.smallMuted}>{plan.currentPage}/{plan.totalPages} bet</Text>
                         <Text style={[s.small, { fontWeight: "700", color: colors.emerald }]}>{plan.percent}%</Text>
                       </View>
-                      {!plan.isCompleted ? (
+                      {!plan.isCompleted && book.status !== "PAUSED" ? (
                         <Text style={[s.smallMuted, { marginTop: 4 }]}>
                           🎯 {plan.todayTarget} bet/kun · ⏳ {plan.daysRemaining} kun qoldi
                         </Text>

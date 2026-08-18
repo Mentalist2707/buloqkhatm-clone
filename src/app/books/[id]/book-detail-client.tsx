@@ -6,6 +6,7 @@ import Link from "next/link";
 import {
   ArrowLeft, BookOpen, Target, Calendar, Clock, Loader2,
   CheckCircle2, Trash2, TrendingUp, TrendingDown, Flame, Plus,
+  PauseCircle, PlayCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -29,10 +30,40 @@ export function BookDetailClient({ book: initialBook }: { book: any }) {
   const [saving, setSaving]     = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [statusUpdating, setStatusUpdating] = useState(false);
+
+  const isPaused = book.status === "PAUSED";
 
   const plan = computeBookPlan(book);
 
   const author = book.author;
+
+  const handleStatus = async () => {
+    const nextStatus = isPaused ? "READING" : "PAUSED";
+    setStatusUpdating(true);
+    try {
+      const res = await fetch(`/api/books/${book.id}`, {
+        method:  "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({ status: nextStatus }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Xatolik");
+
+      setBook(data);
+      toast({
+        title: isPaused ? "▶️ Davom ettirildi" : "⏸️ Kitob to'xtatildi",
+        description: isPaused
+          ? "Reja to'xtatilgan vaqtga uzaytirildi. Barakalla!"
+          : "O'qish rejasi to'xtatildi. Davom ettirish mumkin.",
+      });
+      router.refresh();
+    } catch (err: any) {
+      toast({ title: "Xato", description: err.message, variant: "destructive" });
+    } finally {
+      setStatusUpdating(false);
+    }
+  };
 
   const handleLog = async () => {
     const val = parseInt(toPage);
@@ -132,6 +163,8 @@ export function BookDetailClient({ book: initialBook }: { book: any }) {
                 </div>
                 {plan.isCompleted ? (
                   <Badge variant="completed" className="shrink-0"><CheckCircle2 className="h-3 w-3 mr-1" />Yakunlangan</Badge>
+                ) : isPaused ? (
+                  <Badge variant="draft" className="shrink-0"><PauseCircle className="h-3 w-3 mr-1" />To'xtatilgan</Badge>
                 ) : (
                   <Badge variant="active" className="shrink-0"><BookOpen className="h-3 w-3 mr-1" />O'qilmoqda</Badge>
                 )}
@@ -156,8 +189,45 @@ export function BookDetailClient({ book: initialBook }: { book: any }) {
         </CardContent>
       </Card>
 
-      {/* Plan + today */}
+      {/* Pause / Resume */}
       {!plan.isCompleted && (
+        <Card className="border-0 shadow-sm">
+          <CardContent className={cn(
+            "p-4 flex flex-wrap items-center gap-3",
+            isPaused ? "bg-gray-50 border border-gray-200 rounded-xl" : ""
+          )}>
+            {isPaused ? (
+              <>
+                <div className="h-10 w-10 rounded-xl bg-gray-200 flex items-center justify-center shrink-0">
+                  <PauseCircle className="h-5 w-5 text-gray-600" />
+                </div>
+                <div className="flex-1 min-w-[180px]">
+                  <p className="font-bold text-sm text-gray-700">Kitob to'xtatilgan</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    O'qish rejasi to'xtatildi. Davom etganda reja uzaytiriladi.
+                  </p>
+                </div>
+                <Button variant="emerald" onClick={handleStatus} disabled={statusUpdating}>
+                  {statusUpdating
+                    ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    : <PlayCircle className="h-4 w-4 mr-2" />}
+                  Davom etish
+                </Button>
+              </>
+            ) : (
+              <Button variant="outline" onClick={handleStatus} disabled={statusUpdating} className="ml-auto">
+                {statusUpdating
+                  ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  : <PauseCircle className="h-4 w-4 mr-2" />}
+                To'xtatish
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Plan + today */}
+      {!plan.isCompleted && !isPaused && (
         <div className="grid gap-4 md:grid-cols-2">
           {/* Plan stats */}
           <Card className="border-0 shadow-sm">

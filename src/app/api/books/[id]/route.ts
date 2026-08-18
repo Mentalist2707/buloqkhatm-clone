@@ -70,10 +70,41 @@ export async function PATCH(
       data.targetDate = target;
     }
 
+    // PAUSED → pauza boshlangan vaqtni yozamiz (progress saqlanadi)
+    if (parsed.data.status === "PAUSED" && existing.status !== "PAUSED") {
+      data.pausedAt = new Date();
+    }
+
+    // PAUSED → READING (davom etish): pauza davomiyligi rejaga qo'shiladi,
+    // shu tariqa reja "soati" to'xtagan vaqtni hisoblamaydi.
+    if (
+      parsed.data.status === "READING" &&
+      existing.status === "PAUSED" &&
+      existing.pausedAt
+    ) {
+      const pausedAt   = new Date(existing.pausedAt);
+      const resumeAt   = new Date();
+      const pausedDays = Math.max(
+        0,
+        Math.round((resumeAt.getTime() - pausedAt.getTime()) / 86_400_000)
+      );
+
+      const shift = (d: Date) => {
+        const nd = new Date(d);
+        nd.setDate(nd.getDate() + pausedDays);
+        return nd;
+      };
+
+      data.startDate  = shift(existing.startDate);
+      if (existing.targetDate) data.targetDate = shift(existing.targetDate);
+      data.pausedAt = null;
+    }
+
     // COMPLETED holatiga qo'lda o'tkazilsa
     if (parsed.data.status === "COMPLETED") {
       data.completedAt = new Date();
       data.currentPage = existing.totalPages;
+      data.pausedAt = null;
     }
 
     const book = await prisma.book.update({ where: { id }, data });

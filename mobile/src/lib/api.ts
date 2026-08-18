@@ -56,6 +56,7 @@ export interface Book {
   startDate: string;
   targetDate?: string | null;
   completedAt?: string | null;
+  pausedAt?: string | null;
   status: "READING" | "COMPLETED" | "PAUSED";
   createdAt: string;
   updatedAt: string;

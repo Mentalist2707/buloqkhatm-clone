@@ -6,6 +6,8 @@ export interface BookLike {
   targetDays:  number;
   startDate:   string | Date;
   status?:     string;
+  completedAt?: string | Date | null;
+  pausedAt?:    string | Date | null;
 }
 
 export interface BookPlan {
