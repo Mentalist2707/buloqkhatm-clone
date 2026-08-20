@@ -326,6 +326,7 @@ function AchievementsCard({ myBadges, user }: { myBadges: any[]; user: any }) {
     if (type.startsWith("KHATM_CREATOR")) return 0;
     if (type.startsWith("KHATM"))  return user?.totalKhatms ?? 0;
     if (type.startsWith("STREAK")) return user?.streakDays ?? 0;
+    if (type.startsWith("BOOK_PAGES")) return user?.totalBookPagesRead ?? 0;
     if (type.startsWith("BOOK"))   return user?.totalBooksRead ?? 0;
     if (type.startsWith("JUZ"))    return user?.totalJuzRead ?? 0;
     if (type.startsWith("PAGES"))  return user?.totalPagesRead ?? 0;
@@ -334,14 +335,39 @@ function AchievementsCard({ myBadges, user }: { myBadges: any[]; user: any }) {
     return 0;
   };
 
-  const sorted = [...ALL_BADGES].sort(([ta], [tb]) => {
+  const sortFn = ([ta]: [string, any], [tb]: [string, any]) => {
     const ae = earnedTypes.has(ta as any) ? 1 : 0;
     const be = earnedTypes.has(tb as any) ? 1 : 0;
     if (ae !== be) return be - ae;
     return statOf(tb) - statOf(ta);
-  });
+  };
 
-  const visible = sorted.slice(0, 12);
+  const quron = ALL_BADGES.filter(([, c]) => c.category === "QURON").sort(sortFn).slice(0, 10);
+  const kitob = ALL_BADGES.filter(([, c]) => c.category === "KITOB").sort(sortFn).slice(0, 10);
+
+  const renderRow = ([type, cfg]: [string, any]) => {
+    const earned = earnedTypes.has(type as any);
+    return (
+      <div
+        key={type}
+        title={earned ? `✓ ${cfg.name}` : `🔒 ${cfg.name}`}
+        className={cn(
+          "flex flex-col items-center gap-1 p-2 rounded-xl border transition-all cursor-default",
+          earned
+            ? "bg-yellow-50 border-yellow-200 shadow-sm"
+            : "bg-gray-50 border-gray-100 opacity-40 grayscale"
+        )}
+      >
+        <span className="text-xl">{cfg.icon}</span>
+        <p className={cn(
+          "text-[9px] font-semibold text-center leading-tight",
+          earned ? "text-yellow-700" : "text-gray-400"
+        )}>
+          {cfg.name.split(" ").slice(0, 2).join(" ")}
+        </p>
+      </div>
+    );
+  };
 
   return (
     <Card className="border-0 shadow-sm">
@@ -356,31 +382,18 @@ function AchievementsCard({ myBadges, user }: { myBadges: any[]; user: any }) {
           </Link>
         </div>
       </CardHeader>
-      <CardContent className="px-4 pb-4">
-        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
-          {visible.map(([type, cfg]) => {
-            const earned = earnedTypes.has(type as any);
-            return (
-              <div
-                key={type}
-                title={earned ? `✓ ${cfg.name}` : `🔒 ${cfg.name}`}
-                className={cn(
-                  "flex flex-col items-center gap-1 p-2 rounded-xl border transition-all cursor-default",
-                  earned
-                    ? "bg-yellow-50 border-yellow-200 shadow-sm"
-                    : "bg-gray-50 border-gray-100 opacity-40 grayscale"
-                )}
-              >
-                <span className="text-xl">{cfg.icon}</span>
-                <p className={cn(
-                  "text-[9px] font-semibold text-center leading-tight",
-                  earned ? "text-yellow-700" : "text-gray-400"
-                )}>
-                  {cfg.name.split(" ").slice(0, 2).join(" ")}
-                </p>
-              </div>
-            );
-          })}
+      <CardContent className="px-4 pb-4 space-y-4">
+        <div>
+          <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-2">🕌 Qur'on Yutuqlari</p>
+          <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+            {quron.map(renderRow)}
+          </div>
+        </div>
+        <div>
+          <p className="text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-2">📚 Kitob Yutuqlari</p>
+          <div className="grid grid-cols-5 sm:grid-cols-10 gap-2">
+            {kitob.map(renderRow)}
+          </div>
         </div>
       </CardContent>
     </Card>

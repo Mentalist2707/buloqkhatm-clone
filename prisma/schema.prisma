@@ -57,6 +57,13 @@ enum BadgeType {
   BOOK_10
   BOOK_25
   BOOK_50
+  BOOK_100
+  BOOK_PAGES_100
+  BOOK_PAGES_500
+  BOOK_PAGES_1000
+  BOOK_PAGES_5000
+  BOOK_PAGES_10000
+  BOOK_PAGES_25000
   JUZ_1
   JUZ_5
   JUZ_30
@@ -115,10 +122,11 @@ model User {
   lastDailyAt  DateTime? @map("last_daily_at")
 
   // Statistika
-  totalPagesRead Int @default(0) @map("total_pages_read")
-  totalJuzRead   Int @default(0) @map("total_juz_read")
-  totalKhatms    Int @default(0) @map("total_khatms")
-  totalBooksRead Int @default(0) @map("total_books_read")
+  totalPagesRead      Int @default(0) @map("total_pages_read")
+  totalJuzRead        Int @default(0) @map("total_juz_read")
+  totalKhatms         Int @default(0) @map("total_khatms")
+  totalBooksRead      Int @default(0) @map("total_books_read")
+  totalBookPagesRead  Int @default(0) @map("total_book_pages_read")
 
   country      String?
 

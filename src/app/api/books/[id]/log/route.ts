@@ -90,6 +90,12 @@ export async function POST(
         },
       });
 
+      // 2b. Kitob betlari umumiy hisobi
+      await tx.user.update({
+        where: { id: userId },
+        data:  { totalBookPagesRead: { increment: pagesRead } },
+      });
+
       // 3. Kunlik faollik — kitob betlari
       await tx.dailyActivity.upsert({
         where:  { userId_date: { userId, date: today } },

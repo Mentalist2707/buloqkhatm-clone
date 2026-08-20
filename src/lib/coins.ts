@@ -258,7 +258,8 @@ export async function checkAndAwardBadges(
   const user = await tx.user.findUnique({
     where: { id: userId },
     select: { totalKhatms: true, streakDays: true, totalBooksRead: true,
-              totalJuzRead: true, totalPagesRead: true, coins: true,
+              totalJuzRead: true, totalPagesRead: true, totalBookPagesRead: true,
+              coins: true,
               _count: { select: { khatmsCreated: true, dailyActivities: true } },
               badges: { select: { badge: { select: { type: true } } } } },
   });
@@ -283,6 +284,13 @@ export async function checkAndAwardBadges(
     { type: "BOOK_10",         condition: user.totalBooksRead >= 10  && !earned.has("BOOK_10"       as any) },
     { type: "BOOK_25",         condition: user.totalBooksRead >= 25  && !earned.has("BOOK_25"       as any) },
     { type: "BOOK_50",         condition: user.totalBooksRead >= 50  && !earned.has("BOOK_50"       as any) },
+    { type: "BOOK_100",        condition: user.totalBooksRead >= 100 && !earned.has("BOOK_100"      as any) },
+    { type: "BOOK_PAGES_100",  condition: user.totalBookPagesRead >= 100   && !earned.has("BOOK_PAGES_100"  as any) },
+    { type: "BOOK_PAGES_500",  condition: user.totalBookPagesRead >= 500   && !earned.has("BOOK_PAGES_500"  as any) },
+    { type: "BOOK_PAGES_1000", condition: user.totalBookPagesRead >= 1000  && !earned.has("BOOK_PAGES_1000" as any) },
+    { type: "BOOK_PAGES_5000", condition: user.totalBookPagesRead >= 5000  && !earned.has("BOOK_PAGES_5000" as any) },
+    { type: "BOOK_PAGES_10000",condition: user.totalBookPagesRead >= 10000 && !earned.has("BOOK_PAGES_10000" as any) },
+    { type: "BOOK_PAGES_25000",condition: user.totalBookPagesRead >= 25000 && !earned.has("BOOK_PAGES_25000" as any) },
     { type: "JUZ_1",           condition: user.totalJuzRead   >= 1   && !earned.has("JUZ_1"         as any) },
     { type: "JUZ_5",           condition: user.totalJuzRead   >= 5   && !earned.has("JUZ_5"         as any) },
     { type: "JUZ_30",          condition: user.totalJuzRead   >= 30  && !earned.has("JUZ_30"        as any) },

@@ -65,6 +65,13 @@ const BADGE_REQUIREMENTS: Record<string, string> = {
   BOOK_10:          "10 ta kitobni o'qib tugating",
   BOOK_25:          "25 ta kitobni o'qib tugating",
   BOOK_50:          "50 ta kitobni o'qib tugating",
+  BOOK_100:         "100 ta kitobni o'qib tugating",
+  BOOK_PAGES_100:   "Jami 100 bet kitob o'qing",
+  BOOK_PAGES_500:   "Jami 500 bet kitob o'qing",
+  BOOK_PAGES_1000:  "Jami 1000 bet kitob o'qing",
+  BOOK_PAGES_5000:  "Jami 5000 bet kitob o'qing",
+  BOOK_PAGES_10000: "Jami 10000 bet kitob o'qing",
+  BOOK_PAGES_25000: "Jami 25000 bet kitob o'qing",
   JUZ_1:            "1 ta porani to'liq o'qing",
   JUZ_5:            "5 ta porani to'liq o'qing",
   JUZ_30:           "30 ta porani to'liq o'qing",
@@ -116,6 +123,97 @@ function EmptyState({
       {subtitle && (
         <p className="text-xs text-gray-400 mt-1 max-w-[180px] leading-relaxed">{subtitle}</p>
       )}
+    </div>
+  );
+}
+
+// ─── Medal Section (bo'limlar: Qur'on / Kitoblar) ────────────────────────────
+
+function MedalSection({
+  title,
+  subtitle,
+  configs,
+  badges,
+}: {
+  title: string;
+  subtitle: string;
+  configs: [string, (typeof BADGE_CONFIG)[keyof typeof BADGE_CONFIG]][];
+  badges: any[];
+}) {
+  const earnedCount = configs.filter(([type]) =>
+    badges.find((ub: any) => ub.badge?.type === type)
+  ).length;
+
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-3">
+        <div>
+          <p className="font-bold text-sm">{title}</p>
+          <p className="text-xs text-muted-foreground">{subtitle}</p>
+        </div>
+        <Badge variant="outline" className="text-[10px] shrink-0">
+          {earnedCount}/{configs.length}
+        </Badge>
+      </div>
+
+      <div className="grid gap-2 sm:grid-cols-2">
+        {configs.map(([type, config]) => {
+          const earned = badges.find((ub: any) => ub.badge?.type === type);
+          const req    = BADGE_REQUIREMENTS[type] ?? "Shartni bajaring";
+
+          return (
+            <Tooltip key={type}>
+              <TooltipTrigger asChild>
+                <div className={cn(
+                  "flex items-center gap-3 p-3 rounded-xl border transition-all cursor-default",
+                  earned
+                    ? "bg-yellow-50 border-yellow-200 shadow-sm"
+                    : "bg-gray-50/50 border-gray-100 opacity-60"
+                )}>
+                  <span className={cn("text-3xl shrink-0", !earned && "grayscale opacity-50")}>
+                    {config.icon}
+                  </span>
+                  <div className="min-w-0">
+                    <p className={cn(
+                      "font-semibold text-sm leading-none",
+                      earned ? "text-yellow-800" : "text-gray-500"
+                    )}>
+                      {config.name}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-tight">
+                      {config.description}
+                    </p>
+                    {earned ? (
+                      <p className="text-[10px] text-yellow-600 font-medium mt-1 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" />
+                        {formatDate(earned.earnedAt)}
+                      </p>
+                    ) : (
+                      <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
+                        <Info className="h-3 w-3" />
+                        Qulfli
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="top">
+                {earned ? (
+                  <>
+                    <p className="font-semibold text-yellow-700">✓ Medal qo'lga kiritildi!</p>
+                    <p className="text-xs text-muted-foreground">{formatDate(earned.earnedAt)}</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-semibold">Qanday olish mumkin?</p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{req}</p>
+                  </>
+                )}
+              </TooltipContent>
+            </Tooltip>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -343,74 +441,19 @@ export function ProfileClient({ user, completedJuz, completedKhatms }: Props) {
               </Badge>
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            {/* All possible badges — earned + locked */}
-            <div className="grid gap-2 sm:grid-cols-2">
-              {Object.entries(BADGE_CONFIG).map(([type, config]) => {
-                const earned = user?.badges?.find((ub: any) => ub.badge?.type === type);
-                const req    = BADGE_REQUIREMENTS[type] ?? "Shartni bajaring";
-
-                return (
-                  <Tooltip key={type}>
-                    <TooltipTrigger asChild>
-                      <div className={cn(
-                        "flex items-center gap-3 p-3 rounded-xl border transition-all cursor-default",
-                        earned
-                          ? "bg-yellow-50 border-yellow-200 shadow-sm"
-                          : "bg-gray-50/50 border-gray-100 opacity-60"
-                      )}>
-                        <span className={cn("text-3xl shrink-0", !earned && "grayscale opacity-50")}>
-                          {config.icon}
-                        </span>
-                        <div className="min-w-0">
-                          <p className={cn(
-                            "font-semibold text-sm leading-none",
-                            earned ? "text-yellow-800" : "text-gray-500"
-                          )}>
-                            {config.name}
-                          </p>
-                          <p className="text-xs text-muted-foreground mt-0.5 leading-tight">
-                            {config.description}
-                          </p>
-                          {earned ? (
-                            <p className="text-[10px] text-yellow-600 font-medium mt-1 flex items-center gap-1">
-                              <CheckCircle2 className="h-3 w-3" />
-                              {formatDate(earned.earnedAt)}
-                            </p>
-                          ) : (
-                            <p className="text-[10px] text-gray-400 mt-1 flex items-center gap-1">
-                              <Info className="h-3 w-3" />
-                              Qulfli
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      {earned ? (
-                        <>
-                          <p className="font-semibold text-yellow-700">✓ Medal qo'lga kiritildi!</p>
-                          <p className="text-xs text-muted-foreground">{formatDate(earned.earnedAt)}</p>
-                        </>
-                      ) : (
-                        <>
-                          <p className="font-semibold">Qanday olish mumkin?</p>
-                          <p className="text-xs text-muted-foreground mt-0.5">{req}</p>
-                        </>
-                      )}
-                    </TooltipContent>
-                  </Tooltip>
-                );
-              })}
-            </div>
-
-            {(user?.badges?.length ?? 0) === 0 && (
-              <EmptyState
-                icon={<Award className="h-6 w-6 text-gray-300" />}
-                title="Hali medal yo'q"
-                subtitle="Xatmlarni yakunlab birinchi medalingizni qo'lga kiriting!"
-              />
-            )}
+          <CardContent className="space-y-6">
+            <MedalSection
+              title="🕌 Qur'on Yutuqlari"
+              subtitle="Xatm, pora, sahifa, streak va faollik"
+              configs={Object.entries(BADGE_CONFIG).filter(([, c]) => c.category === "QURON")}
+              badges={user?.badges ?? []}
+            />
+            <MedalSection
+              title="📚 Kitob Yutuqlari"
+              subtitle="O'qilgan kitoblar va kitob betlari"
+              configs={Object.entries(BADGE_CONFIG).filter(([, c]) => c.category === "KITOB")}
+              badges={user?.badges ?? []}
+            />
           </CardContent>
         </Card>
 
