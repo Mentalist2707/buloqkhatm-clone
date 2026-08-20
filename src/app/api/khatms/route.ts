@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUserId } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { generateInviteCode } from "@/lib/utils";
+import { checkAndAwardBadges } from "@/lib/coins";
 import { z } from "zod";
 
 export const dynamic = "force-dynamic";
@@ -137,6 +138,9 @@ export async function POST(req: NextRequest) {
       await tx.participation.create({
         data: { userId, khatmId: newKhatm.id },
       });
+
+      // Xatm yaratuvchisi medallarini tekshirish
+      await checkAndAwardBadges(tx, userId);
 
       return newKhatm;
     });

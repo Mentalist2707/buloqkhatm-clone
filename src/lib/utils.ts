@@ -170,14 +170,22 @@ export function getKhatmProgress(completed: number, total = 30): number {
 // ─── Badge Config ─────────────────────────────────────────────────────────────
 
 export const BADGE_CONFIG = {
-  KHATM_1:   { name: "Birinchi Xatm",  icon: "🌱", description: "1 ta xatmni yakunladi"      },
-  KHATM_10:  { name: "10 Xatm",        icon: "📖", description: "10 ta xatmni yakunladi"     },
-  KHATM_50:  { name: "50 Xatm",        icon: "🌟", description: "50 ta xatmni yakunladi"     },
-  KHATM_100: { name: "100 Xatm",       icon: "👑", description: "100 ta xatmni yakunladi"    },
-  STREAK_7:  { name: "7 Kun Streak",   icon: "🔥", description: "7 kun ketma-ket faol"       },
-  STREAK_30: { name: "30 Kun Streak",  icon: "💎", description: "30 kun ketma-ket faol"      },
-  BOOK_1:    { name: "Birinchi Kitob", icon: "📚", description: "1 ta kitobni o'qib tugatdi" },
-  BOOK_10:   { name: "10 Kitob",       icon: "🏆", description: "10 ta kitobni o'qib tugatdi"},
+  KHATM_1:         { name: "Birinchi Xatm",      icon: "🌱", description: "1 ta xatmni yakunladi"        },
+  KHATM_10:        { name: "10 Xatm",            icon: "📖", description: "10 ta xatmni yakunladi"       },
+  KHATM_50:        { name: "50 Xatm",            icon: "🌟", description: "50 ta xatmni yakunladi"       },
+  KHATM_100:       { name: "100 Xatm",           icon: "👑", description: "100 ta xatmni yakunladi"      },
+  STREAK_7:        { name: "7 Kun Streak",       icon: "🔥", description: "7 kun ketma-ket faol"         },
+  STREAK_30:       { name: "30 Kun Streak",      icon: "💎", description: "30 kun ketma-ket faol"        },
+  STREAK_100:      { name: "100 Kun Streak",     icon: "🏅", description: "100 kun ketma-ket faol"       },
+  BOOK_1:          { name: "Birinchi Kitob",     icon: "📚", description: "1 ta kitobni o'qib tugatdi"    },
+  BOOK_10:         { name: "10 Kitob",           icon: "🏆", description: "10 ta kitobni o'qib tugatdi"   },
+  BOOK_25:         { name: "25 Kitob",           icon: "📚", description: "25 ta kitobni o'qib tugatdi"   },
+  JUZ_5:           { name: "5 Pora",             icon: "🎯", description: "5 ta porani to'liq o'qidi"     },
+  JUZ_30:          { name: "30 Pora",            icon: "📗", description: "30 ta porani to'liq o'qidi"    },
+  PAGES_500:       { name: "500 Sahifa",         icon: "📄", description: "500 sahifa Qur'on o'qidi"      },
+  PAGES_5000:      { name: "5000 Sahifa",        icon: "🗂️", description: "5000 sahifa Qur'on o'qidi"     },
+  KHATM_CREATOR_1: { name: "Xatm Yaratuvchi",    icon: "✨", description: "1 ta xatm yaratdi"             },
+  KHATM_CREATOR_5: { name: "5 Xatm Yaratuvchi",  icon: "🚀", description: "5 ta xatm yaratdi"            },
 } as const;
 
 // ─── Coin display ─────────────────────────────────────────────────────────────

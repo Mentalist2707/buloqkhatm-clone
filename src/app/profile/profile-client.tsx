@@ -49,13 +49,23 @@ interface Props {
 // ─── Medal requirements ───────────────────────────────────────────────────────
 
 const BADGE_REQUIREMENTS: Record<string, string> = {
-  KHATM_1:   "1 ta jamoaviy xatmni to'liq yakunlang",
-  KHATM_10:  "10 ta xatmni yakunlang",
-  KHATM_50:  "50 ta xatmni yakunlang",
-  KHATM_100: "100 ta xatmni yakunlang",
-  STREAK_7:  "7 kun ketma-ket pora o'qing",
-  STREAK_30: "30 kun ketma-ket pora o'qing",
-  REFERRAL:  "Do'stingizni platformaga taklif qiling",
+  KHATM_1:          "1 ta jamoaviy xatmni to'liq yakunlang",
+  KHATM_10:         "10 ta xatmni yakunlang",
+  KHATM_50:         "50 ta xatmni yakunlang",
+  KHATM_100:        "100 ta xatmni yakunlang",
+  STREAK_7:         "7 kun ketma-ket pora o'qing",
+  STREAK_30:        "30 kun ketma-ket pora o'qing",
+  STREAK_100:       "100 kun ketma-ket pora o'qing",
+  BOOK_1:           "1 ta kitobni o'qib tugating",
+  BOOK_10:          "10 ta kitobni o'qib tugating",
+  BOOK_25:          "25 ta kitobni o'qib tugating",
+  JUZ_5:            "5 ta porani to'liq o'qing",
+  JUZ_30:           "30 ta porani to'liq o'qing",
+  PAGES_500:        "Jami 500 sahifa Qur'on o'qing",
+  PAGES_5000:       "Jami 5000 sahifa Qur'on o'qing",
+  KHATM_CREATOR_1:  "1 ta yangi xatm yarating",
+  KHATM_CREATOR_5:  "5 ta yangi xatm yarating",
+  REFERRAL:         "Do'stingizni platformaga taklif qiling",
 };
 
 // ─── Point reason display ─────────────────────────────────────────────────────

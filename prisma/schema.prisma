@@ -47,8 +47,16 @@ enum BadgeType {
   KHATM_100
   STREAK_7
   STREAK_30
+  STREAK_100
   BOOK_1
   BOOK_10
+  BOOK_25
+  JUZ_5
+  JUZ_30
+  PAGES_500
+  PAGES_5000
+  KHATM_CREATOR_1
+  KHATM_CREATOR_5
 }
 
 /// BuloqCoin tranzaksiya sabablari
