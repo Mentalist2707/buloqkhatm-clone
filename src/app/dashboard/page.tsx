@@ -86,7 +86,7 @@ async function getDashboardData(userId: string) {
     prisma.userBadge.findMany({
       where:   { userId },
       include: { badge: true },
-      take:    8,
+      take:    30,
     }),
 
     // O'qilayotgan kitoblar

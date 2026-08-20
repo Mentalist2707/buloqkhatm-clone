@@ -258,8 +258,8 @@ export async function checkAndAwardBadges(
   const user = await tx.user.findUnique({
     where: { id: userId },
     select: { totalKhatms: true, streakDays: true, totalBooksRead: true,
-              totalJuzRead: true, totalPagesRead: true,
-              _count: { select: { khatmsCreated: true } },
+              totalJuzRead: true, totalPagesRead: true, coins: true,
+              _count: { select: { khatmsCreated: true, dailyActivities: true } },
               badges: { select: { badge: { select: { type: true } } } } },
   });
   if (!user) return;
@@ -267,22 +267,36 @@ export async function checkAndAwardBadges(
   const earned = new Set(user.badges.map((b) => b.badge.type));
 
   const checks: Array<{ type: string; condition: boolean }> = [
-    { type: "KHATM_1",         condition: user.totalKhatms >= 1    && !earned.has("KHATM_1"         as any) },
-    { type: "KHATM_10",        condition: user.totalKhatms >= 10   && !earned.has("KHATM_10"        as any) },
-    { type: "KHATM_50",        condition: user.totalKhatms >= 50   && !earned.has("KHATM_50"        as any) },
-    { type: "KHATM_100",       condition: user.totalKhatms >= 100  && !earned.has("KHATM_100"       as any) },
+    { type: "KHATM_1",         condition: user.totalKhatms >= 1      && !earned.has("KHATM_1"         as any) },
+    { type: "KHATM_10",        condition: user.totalKhatms >= 10     && !earned.has("KHATM_10"        as any) },
+    { type: "KHATM_50",        condition: user.totalKhatms >= 50     && !earned.has("KHATM_50"        as any) },
+    { type: "KHATM_100",       condition: user.totalKhatms >= 100    && !earned.has("KHATM_100"       as any) },
+    { type: "KHATM_CREATOR_1", condition: user._count.khatmsCreated >= 1  && !earned.has("KHATM_CREATOR_1" as any) },
+    { type: "KHATM_CREATOR_5", condition: user._count.khatmsCreated >= 5  && !earned.has("KHATM_CREATOR_5" as any) },
+    { type: "KHATM_CREATOR_10", condition: user._count.khatmsCreated >= 10 && !earned.has("KHATM_CREATOR_10" as any) },
+    { type: "STREAK_3",        condition: user.streakDays  >= 3    && !earned.has("STREAK_3"        as any) },
     { type: "STREAK_7",        condition: user.streakDays  >= 7    && !earned.has("STREAK_7"        as any) },
     { type: "STREAK_30",       condition: user.streakDays  >= 30   && !earned.has("STREAK_30"       as any) },
+    { type: "STREAK_60",       condition: user.streakDays  >= 60   && !earned.has("STREAK_60"       as any) },
     { type: "STREAK_100",      condition: user.streakDays  >= 100  && !earned.has("STREAK_100"      as any) },
     { type: "BOOK_1",          condition: user.totalBooksRead >= 1   && !earned.has("BOOK_1"        as any) },
     { type: "BOOK_10",         condition: user.totalBooksRead >= 10  && !earned.has("BOOK_10"       as any) },
     { type: "BOOK_25",         condition: user.totalBooksRead >= 25  && !earned.has("BOOK_25"       as any) },
+    { type: "BOOK_50",         condition: user.totalBooksRead >= 50  && !earned.has("BOOK_50"       as any) },
+    { type: "JUZ_1",           condition: user.totalJuzRead   >= 1   && !earned.has("JUZ_1"         as any) },
     { type: "JUZ_5",           condition: user.totalJuzRead   >= 5   && !earned.has("JUZ_5"         as any) },
     { type: "JUZ_30",          condition: user.totalJuzRead   >= 30  && !earned.has("JUZ_30"        as any) },
-    { type: "PAGES_500",       condition: user.totalPagesRead >= 500 && !earned.has("PAGES_500"     as any) },
-    { type: "PAGES_5000",      condition: user.totalPagesRead >= 5000 && !earned.has("PAGES_5000"   as any) },
-    { type: "KHATM_CREATOR_1", condition: user._count.khatmsCreated >= 1 && !earned.has("KHATM_CREATOR_1" as any) },
-    { type: "KHATM_CREATOR_5", condition: user._count.khatmsCreated >= 5 && !earned.has("KHATM_CREATOR_5" as any) },
+    { type: "JUZ_100",         condition: user.totalJuzRead   >= 100 && !earned.has("JUZ_100"       as any) },
+    { type: "PAGES_1",         condition: user.totalPagesRead >= 1     && !earned.has("PAGES_1"     as any) },
+    { type: "PAGES_100",       condition: user.totalPagesRead >= 100   && !earned.has("PAGES_100"   as any) },
+    { type: "PAGES_500",       condition: user.totalPagesRead >= 500   && !earned.has("PAGES_500"   as any) },
+    { type: "PAGES_1000",      condition: user.totalPagesRead >= 1000  && !earned.has("PAGES_1000"  as any) },
+    { type: "PAGES_5000",      condition: user.totalPagesRead >= 5000  && !earned.has("PAGES_5000"  as any) },
+    { type: "PAGES_10000",     condition: user.totalPagesRead >= 10000 && !earned.has("PAGES_10000" as any) },
+    { type: "ACTIVE_30",       condition: user._count.dailyActivities >= 30  && !earned.has("ACTIVE_30"  as any) },
+    { type: "ACTIVE_100",      condition: user._count.dailyActivities >= 100 && !earned.has("ACTIVE_100" as any) },
+    { type: "COINS_1000",      condition: user.coins >= 1000  && !earned.has("COINS_1000" as any) },
+    { type: "COINS_5000",      condition: user.coins >= 5000  && !earned.has("COINS_5000" as any) },
   ];
 
   for (const check of checks) {

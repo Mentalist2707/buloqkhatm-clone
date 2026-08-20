@@ -318,9 +318,30 @@ function CoinPanel({ user, todayActivity }: { user: any; todayActivity: any }) {
 
 // ─── Achievements ──────────────────────────────────────────────────────────────
 
-function AchievementsCard({ myBadges }: { myBadges: any[] }) {
+function AchievementsCard({ myBadges, user }: { myBadges: any[]; user: any }) {
   const ALL_BADGES = Object.entries(BADGE_CONFIG);
   const earnedTypes = new Set(myBadges.map((b) => b.badge?.type));
+
+  const statOf = (type: string): number => {
+    if (type.startsWith("KHATM_CREATOR")) return 0;
+    if (type.startsWith("KHATM"))  return user?.totalKhatms ?? 0;
+    if (type.startsWith("STREAK")) return user?.streakDays ?? 0;
+    if (type.startsWith("BOOK"))   return user?.totalBooksRead ?? 0;
+    if (type.startsWith("JUZ"))    return user?.totalJuzRead ?? 0;
+    if (type.startsWith("PAGES"))  return user?.totalPagesRead ?? 0;
+    if (type.startsWith("ACTIVE")) return 0;
+    if (type.startsWith("COINS"))  return user?.coins ?? 0;
+    return 0;
+  };
+
+  const sorted = [...ALL_BADGES].sort(([ta], [tb]) => {
+    const ae = earnedTypes.has(ta as any) ? 1 : 0;
+    const be = earnedTypes.has(tb as any) ? 1 : 0;
+    if (ae !== be) return be - ae;
+    return statOf(tb) - statOf(ta);
+  });
+
+  const visible = sorted.slice(0, 12);
 
   return (
     <Card className="border-0 shadow-sm">
@@ -330,14 +351,14 @@ function AchievementsCard({ myBadges }: { myBadges: any[] }) {
             <Award className="h-4 w-4 text-yellow-500" />
             Medallar
           </CardTitle>
-          <span className="text-xs text-muted-foreground">
-            {myBadges.length}/{ALL_BADGES.length}
-          </span>
+          <Link href="/profile" className="text-xs font-medium text-emerald-600 hover:underline">
+            {myBadges.length}/{ALL_BADGES.length} • Barchasi
+          </Link>
         </div>
       </CardHeader>
       <CardContent className="px-4 pb-4">
-        <div className="grid grid-cols-4 gap-2">
-          {ALL_BADGES.map(([type, cfg]) => {
+        <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+          {visible.map(([type, cfg]) => {
             const earned = earnedTypes.has(type as any);
             return (
               <div
@@ -610,7 +631,7 @@ export function DashboardClient({
             <ActiveKhatmsCard khatms={recentKhatms} />
           </div>
 
-          <AchievementsCard myBadges={myBadges} />
+          <AchievementsCard myBadges={myBadges} user={user} />
         </div>
 
         {/* Right (1/3) */}
